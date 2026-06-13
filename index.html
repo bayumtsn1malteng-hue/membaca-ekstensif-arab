@@ -27,7 +27,7 @@
  display: none;
  }
  .no-scrollbar {
- -ms-overflow-style: none; /* IE and Edge */
+ -ms-overflow-style: none; /* IE dan Edge */
  scrollbar-width: none; /* Firefox */
  }
  .custom-scrollbar::-webkit-scrollbar {
@@ -67,7 +67,7 @@
  </div>
  <div>
  <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Membaca Ekstensif Bertingkat</h1>
- <p class="text-[10px] sm:text-xs text-indigo-600 font-bold tracking-wider uppercase">Panel Pengelola Data v0.3.2-alpha</p>
+ <p class="text-[10px] sm:text-xs text-indigo-600 font-bold tracking-wider uppercase">Panel Pengelola Bacaan v0.4.5-alpha</p>
  </div>
  </div>
  
@@ -157,7 +157,7 @@
  <form id="form-metadata" onsubmit="handleSaveText(event)" class="space-y-4">
  <div>
  <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Seri Tema</label>
- <input type="text" id="input-seri" list="list-seri" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-base sm:text-sm bg-slate-50/50" placeholder="Contoh: Kisah Para Nabi" required>
+ <input type="text" id="input-seri" list="list-seri" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:indigo-100 outline-none transition text-base sm:text-sm bg-slate-50/50" placeholder="Contoh: Kisah Para Nabi" required>
  <datalist id="list-seri">
  <option value="Kisah Para Nabi">
  <option value="Kehidupan Sehari-hari">
@@ -366,7 +366,7 @@
  <footer class="bg-white border-t border-slate-200 py-6 mt-12">
  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-[10px] sm:text-xs text-slate-400 space-y-1">
  <p>&copy; 2026 Membaca Ekstensif Bertingkat Arab. Seluruh data disimpan lokal atau disinkronkan ke Google Sheets.</p>
- <p>ID Unik Perencanaan: <span class="font-mono text-indigo-500">MEB-PLAN-2026-004-REV v0.3.2-alpha</span></p>
+ <p>ID Unik Perencanaan: <span class="font-mono text-indigo-500">MEB-PLAN-2026-004-REV v0.3.3-alpha</span></p>
  </div>
  </footer>
 
@@ -581,7 +581,7 @@
  </div>
 
  <div class="space-y-1.5">
- <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Status Penguasaan (Leitner)</span>
+ <span class="text-[9px] font-bold text-slate-400 tracking-widest uppercase block mb-3">Status Penguasaan (Leitner)</span>
  <div class="grid grid-cols-3 gap-1.5">
  <button class="active-tap bg-red-50 text-red-700 text-[10px] font-semibold py-2 px-1.5 rounded-lg border border-red-100 hover:bg-red-100 transition">Baru</button>
  <button class="active-tap bg-amber-50 text-amber-700 text-[10px] font-semibold py-2 px-1.5 rounded-lg border border-amber-100 hover:bg-amber-100 transition">Dikenali</button>
@@ -666,22 +666,22 @@
  let dbMasterSambungan = [];
 
  const MASTER_SAMBUNGAN_DEFAULT = [
- { Bentuk_Sambungan: "لـ", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf jar" },
- { Bentuk_Sambungan: "الـ", Letak_Sambungan: "awal", Jenis_Sambungan: "partikel" },
- { Bentuk_Sambungan: "يـ", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf mudhara'ah orang ketiga" },
- { Bentuk_Sambungan: "سـ", Letak_Sambungan: "awal", Jenis_Sambungan: "keterangan waktu" },
- { Bentuk_Sambungan: "بـ", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf jar" },
- { Bentuk_Sambungan: "و", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf 'ataf (dan)" },
- { Bentuk_Sambungan: "يـ", Letak_Sambungan: "akhir", Jenis_Sambungan: "dhamir muttasil tunggal orang pertama" },
- { Bentuk_Sambungan: "ها", Letak_Sambungan: "akhir", Jenis_Sambungan: "dhamir muttasil tunggal orang ketiga" },
- { Bentuk_Sambungan: "ـو", Letak_Sambungan: "akhir", Jenis_Sambungan: "penanda jamak mudzakar" },
- { Bentuk_Sambungan: "ه/ـه", Letak_Sambungan: "akhir", Jenis_Sambungan: "dhamir muttasil tunggal orang ketiga laki-laki" }
+ { ID_Sambungan: "SAM-PRE-0001", Bentuk_Sambungan: "لـ", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf jar", Fungsi_Sambungan: "untuk / milik" },
+ { ID_Sambungan: "SAM-PRE-0002", Bentuk_Sambungan: "الـ", Letak_Sambungan: "awal", Jenis_Sambungan: "partikel", Fungsi_Sambungan: "penjelas makrifah" },
+ { ID_Sambungan: "SAM-PRE-0003", Bentuk_Sambungan: "يـ", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf mudhara'ah orang ketiga", Fungsi_Sambungan: "subjek mudhari'" },
+ { ID_Sambungan: "SAM-PRE-0004", Bentuk_Sambungan: "سـ", Letak_Sambungan: "awal", Jenis_Sambungan: "keterangan waktu", Fungsi_Sambungan: "masa depan dekat" },
+ { ID_Sambungan: "SAM-PRE-0005", Bentuk_Sambungan: "بـ", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf jar", Fungsi_Sambungan: "dengan / pada" },
+ { ID_Sambungan: "SAM-PRE-0006", Bentuk_Sambungan: "و", Letak_Sambungan: "awal", Jenis_Sambungan: "huruf 'ataf (dan)", Fungsi_Sambungan: "penyambung" },
+ { ID_Sambungan: "SAM-SU-0001", Bentuk_Sambungan: "يـ", Letak_Sambungan: "akhir", Jenis_Sambungan: "dhamir muttasil tunggal orang pertama", Fungsi_Sambungan: "kepunyaan saya" },
+ { ID_Sambungan: "SAM-SU-0002", Bentuk_Sambungan: "ها", Letak_Sambungan: "akhir", Jenis_Sambungan: "dhamir muttasil tunggal orang ketiga", Fungsi_Sambungan: "nya (pr)" },
+ { ID_Sambungan: "SAM-SU-0003", Bentuk_Sambungan: "ـو", Letak_Sambungan: "akhir", Jenis_Sambungan: "penanda jamak mudzakar", Fungsi_Sambungan: "mereka laki-laki" },
+ { ID_Sambungan: "SAM-SU-0004", Bentuk_Sambungan: "ه/ـه", Letak_Sambungan: "akhir", Jenis_Sambungan: "dhamir muttasil tunggal orang ketiga laki-laki", Fungsi_Sambungan: "nya (lk)" }
  ];
 
  const KATA_INDUK_DEFAULT = [
  { ID_Kata_Induk: "IND-00045", Kata_Induk: "مَدْرَسَة", Kata_Induk_Polos: "مدرسة", Arti_Kata_Induk: "sekolah", Kategori: "Isim" },
  { ID_Kata_Induk: "IND-00046", Kata_Induk: "كَتَبَ", Kata_Induk_Polos: "كتب", Arti_Kata_Induk: "menulis", Kategori: "Fi'il" },
- { ID_Kata_Induk: "IND-00047", Kata_Induk: "سَفِينَة", Kata_Induk_Polos: "سفينة", Arti_Kata_Induk: "kapal", Kategori: "Isim" }
+ { ID_Kata_Induk: "IND-00047", Kata_Induk: "سَفِينَة", Kata_Induk_Polos: "سfينة", Arti_Kata_Induk: "kapal", Kategori: "Isim" }
  ];
 
  const PUSTAKA_DEFAULT = [
@@ -737,12 +737,12 @@
       }
    });
 
-   showToast("Aplikasi Admin v0.3.2-alpha berhasil diinisialisasi!", "info");
+   showToast("Aplikasi Admin v0.3.3-alpha berhasil diinisialisasi!", "info");
  };
 
  function arabicLightStemmer(word) {
    const prefixes = ["ال", "لل", "بال", "كال", "فال", "وال", "ب", "ل", "ف", "و", "س"];
-   const suffixes = ["ون", "ين", "ات", "كما", "كم", "هم", "هن", "ها", "na", "تم", "t", "ه", "ي", "ا"];
+   const suffixes = ["ون", "ين", "ات", "كما", "kom", "hem", "hen", "ha", "na", "tem", "t", "h", "y", "a"];
    
    let cleanWord = cleanArabicDiacritics(word);
    let stem = cleanWord;
@@ -1011,7 +1011,7 @@
    dbPustaka.unshift(textData);
    saveToLocalStorage(DB_KEYS.PUSTAKA, dbPustaka);
    
-   // Direct Real-time API Saving
+   // Simpan Realtime terus ke Sheets
    await postDataToBackend("saveText", textData);
 
    const uniqueParsed = parseArabicText(textData.Konten_Arab);
@@ -1160,7 +1160,7 @@
    dbPustaka = dbPustaka.filter(p => p.ID_Teks !== idTeks);
    saveToLocalStorage(DB_KEYS.PUSTAKA, dbPustaka);
    
-   // Direct Real-time Deletion API
+   // Panggilan Hapus di GAS Backend
    await postDataToBackend("deleteText", { ID_Teks: idTeks });
 
    renderPustakaTable();
@@ -1215,10 +1215,10 @@
    let itemsToRender = [];
 
    if (stateWordQueue.length > 0) {
-     // Bila sedang memproses naskah aktif
+     // Membaca antrean dari pemrosesan naskah aktif
      itemsToRender = [...stateWordQueue];
    } else {
-     // Menampilkan seluruh kosakata terdaftar (Peta Kosakata & Kata Induk)
+     // Paparkan semua daftar terpetakan luring
      const mappedFromPeta = dbPetaKosakata.map(item => ({
        id_teks: item.ID_Teks,
        id_vocab: item.ID_Kosakata,
@@ -1237,7 +1237,6 @@
        type: "Induk"
      }));
 
-     // Unifikasi dan hilangkan duplikasi visual
      const seenClean = new Set();
      itemsToRender = [...mappedFromPeta, ...mappedFromInduk].filter(item => {
        if (seenClean.has(item.word_clean)) return false;
@@ -1339,29 +1338,25 @@
  function openVocabPopupForWord(raw, clean) {
    stateActiveWord = { raw, clean };
 
-   // Kata Teks Aktif diisi dengan nilai yang memiliki harakat
    document.getElementById("mapper-active-word").value = raw;
    document.getElementById("mapper-clean-word").innerText = `Versi Bersih (Syaddah bertahan): ${clean}`;
    
    document.getElementById("mapper-arti-teks").value = "";
-   document.getElementById("gabungan-kata-induk").value = clean; // Secara default berasal dari kata teks yang sudah dibersihkan
+   document.getElementById("gabungan-kata-induk").value = clean; 
    document.getElementById("gabungan-arti-induk").value = "";
    document.getElementById("gabungan-id-induk").value = "";
    
    document.getElementById("sambungan-rows-container").innerHTML = "";
 
-   // Cek apakah kata bersih sudah terdaftar sebagai Kata Induk di database
    const directInduk = dbKataInduk.find(i => i.Kata_Induk_Polos === clean);
    const matchVocab = dbPetaKosakata.find(v => v.Kata_Teks_Polos === clean);
 
    if (directInduk) {
-     // Jika sudah terdaftar sebagai kata induk utama
      document.getElementById("mapper-arti-teks").value = directInduk.Arti_Kata_Induk;
      document.querySelector('input[name="input-jenis-kata"][value="Induk"]').checked = true;
    } else {
      document.querySelector('input[name="input-jenis-kata"][value="Gabungan"]').checked = true;
      
-     // Cek hasil Auto-Stemmer
      const stemResult = arabicLightStemmer(clean);
      if (stemResult.stem && stemResult.stem !== clean) {
        const potentialParent = dbKataInduk.find(i => i.Kata_Induk_Polos === stemResult.stem);
@@ -1401,9 +1396,12 @@
 
      document.getElementById("sambungan-rows-container").innerHTML = "";
      slots.forEach(slot => {
-       const val = matchVocab[slot.key];
+       const val = matchVocab[slot.key]; // Berisi ID_Sambungan (misal: "SAM-PRE-0001") atau string sisa data lama
        if (val) {
-         addSambunganRow(slot.key, val);
+         // Lookup ID_Sambungan terlebih dahulu agar form visual menampilkan bentuk literal Arabnya kembali
+         const matchSamb = dbMasterSambungan.find(s => s.ID_Sambungan === val || s.Bentuk_Sambungan === val);
+         const bentukVisual = matchSamb ? matchSamb.Bentuk_Sambungan : val;
+         addSambunganRow(slot.key, bentukVisual);
        }
      });
    }
@@ -1470,6 +1468,10 @@
    wrapper.classList.remove("hidden");
  }
 
+ // ==========================================
+ // KODE SINKRONISASI SAMBUNGAN BARU (ROW-FUNGSI)
+ // ==========================================
+
  function addSambunganRow(selectedSlot = "", selectedBentuk = "") {
    const container = document.getElementById("sambungan-rows-container");
    const index = container.children.length;
@@ -1490,6 +1492,7 @@
      `<option value="${s.val}" ${selectedSlot === s.val ? "selected" : ""}>${s.txt}</option>`
    ).join('');
 
+   // Mengganti selector ke row-fungsi & Fungsi Sambungan
    row.innerHTML = `
    <div>
      <label class="block sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Letak Kolom</label>
@@ -1504,8 +1507,8 @@
    </div>
    <div class="flex items-center space-x-1.5 pr-8 sm:pr-0">
      <div class="w-full">
-       <label class="block sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jenis Sambungan</label>
-       <input type="text" readonly class="row-jenis w-full px-2.5 py-2.5 sm:py-1.5 rounded-lg border border-slate-200 sm:border-slate-100 outline-none text-[10px] bg-slate-100 text-slate-500" placeholder="Jenis otomatis...">
+       <label class="block sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fungsi Sambungan</label>
+       <input type="text" readonly class="row-fungsi w-full px-2.5 py-2.5 sm:py-1.5 rounded-lg border border-slate-200 sm:border-slate-100 outline-none text-[10px] bg-slate-100 text-slate-500" placeholder="Fungsi otomatis...">
      </div>
    </div>
    <button type="button" onclick="this.parentElement.remove()" class="absolute right-3 top-3 sm:top-2 text-slate-400 hover:text-rose-500 transition p-1 rounded-lg bg-white sm:bg-transparent border border-slate-200 sm:border-0 active-tap">
@@ -1519,7 +1522,7 @@
 
    if (selectedBentuk) {
      const shapeInput = row.querySelector(".row-bentuk");
-     fillSambunganJenis(shapeInput, selectedBentuk);
+     fillSambunganFungsi(shapeInput, selectedBentuk);
    }
  }
 
@@ -1542,16 +1545,17 @@
      return;
    }
 
+   // Diubah agar query selector mengisi input ".row-fungsi" berdasarkan "Fungsi_Sambungan"
    matched.forEach(item => {
      const div = document.createElement("div");
      div.className = "p-2.5 hover:bg-slate-50 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 min-h-[38px] active-tap";
      div.onclick = function() {
        inputEl.value = item.Bentuk_Sambungan;
-       row.querySelector(".row-jenis").value = item.Jenis_Sambungan;
+       row.querySelector(".row-fungsi").value = item.Fungsi_Sambungan || item.Jenis_Sambungan || "";
        box.classList.add("hidden");
      };
      div.innerHTML = `
-       <span class="text-slate-400 text-[9px]">${item.Jenis_Sambungan}</span>
+       <span class="text-slate-400 text-[9px]">${item.Fungsi_Sambungan || item.Jenis_Sambungan || ""}</span>
        <span class="font-arabic font-bold text-indigo-600">${item.Bentuk_Sambungan}</span>
      `;
      box.appendChild(div);
@@ -1560,36 +1564,33 @@
    box.classList.remove("hidden");
  }
 
- function fillSambunganJenis(inputEl, val) {
+ function fillSambunganFungsi(inputEl, val) {
    const row = inputEl.parentElement.parentElement;
    const match = dbMasterSambungan.find(s => s.Bentuk_Sambungan === val);
    if (match) {
-     row.querySelector(".row-jenis").value = match.Jenis_Sambungan;
+     row.querySelector(".row-fungsi").value = match.Fungsi_Sambungan || match.Jenis_Sambungan || "";
    }
  }
+
+ // ==========================================
 
  async function handleSaveVocabMapping(event) {
    event.preventDefault();
 
    const jenisVal = document.querySelector('input[name="input-jenis-kata"]:checked').value;
    const rawWord = document.getElementById("mapper-active-word").value.trim();
-   const cleanWord = cleanArabicDiacritics(rawWord); // Bersihkan secara dinamis dari input teks ter-edit
+   const cleanWord = cleanArabicDiacritics(rawWord); 
    const artiTeks = document.getElementById("mapper-arti-teks").value;
 
    if (jenisVal === "Induk") {
-     // Perilaku baru Iterasi 2: Kirim data bentuk berharakat ke Peta_Kosakata DAN bentuk bersih ke Kata_Induk.
-     
-     // 1. Simpan/Update bentuk bersih ke Kata_Induk
      const existingIndukIndex = dbKataInduk.findIndex(i => i.Kata_Induk_Polos === cleanWord);
      let updatedInduk;
 
      if (existingIndukIndex !== -1) {
-       // UPDATE Rekaman yang sudah ada di Kata_Induk (mencegah duplikasi)
        dbKataInduk[existingIndukIndex].Kata_Induk = cleanWord; 
        dbKataInduk[existingIndukIndex].Arti_Kata_Induk = artiTeks;
        updatedInduk = dbKataInduk[existingIndukIndex];
      } else {
-       // Tambah Rekaman Baru di Kata_Induk
        const nextIdVal = `IND-000${dbKataInduk.length + 45}`;
        updatedInduk = {
          ID_Kata_Induk: nextIdVal,
@@ -1603,17 +1604,16 @@
      saveToLocalStorage(DB_KEYS.KATA_INDUK, dbKataInduk);
      await postDataToBackend("saveVocab", { jenis_kata: "Induk", ...updatedInduk });
 
-     // 2. Simpan/Update bentuk berharakat ke Peta_Kosakata (Sebagai penanda representasi Kata Induk di dalam teks)
      const existingPetaIndex = dbPetaKosakata.findIndex(v => v.Kata_Teks_Polos === cleanWord);
      const nextVocabId = `VOC-000${dbPetaKosakata.length + 1}`;
      
      const targetPetaRecord = {
        ID_Kosakata: existingPetaIndex !== -1 ? dbPetaKosakata[existingPetaIndex].ID_Kosakata : nextVocabId,
        ID_Teks: stateActiveText.ID_Teks || "",
-       Kata_Teks: rawWord, // Berharakat (misal: صَبَاحًا)
+       Kata_Teks: rawWord, 
        Kata_Teks_Polos: cleanWord,
        Arti_Kata_Teks: artiTeks,
-       ID_Kata_Induk: updatedInduk.ID_Kata_Induk, // Relasi ke tabel Kata_Induk
+       ID_Kata_Induk: updatedInduk.ID_Kata_Induk, 
        Sambungan_Awal_1: "", Sambungan_Awal_2: "", Sambungan_Awal_3: "",
        Sambungan_Akhir_1: "", Sambungan_Akhir_2: "", Sambungan_Akhir_3: ""
      };
@@ -1629,28 +1629,24 @@
      showToast(`Kata Induk Ganda "${rawWord}" & "${cleanWord}" tersimpan di kedua sheet secara realtime!`, "success");
 
    } else {
-     // Pilihan GABUNGAN
      let id_kata_induk = document.getElementById("gabungan-id-induk").value;
      const editKataIndukText = document.getElementById("gabungan-kata-induk").value.trim();
      const editArtiIndukText = document.getElementById("gabungan-arti-induk").value.trim();
 
-     let statusWarnaKata = "kuning"; // Default status jika kosong
+     let statusWarnaKata = "kuning"; 
 
      if (editKataIndukText && editArtiIndukText) {
        statusWarnaKata = "hijau";
-       // Cari kata induk di database berdasarkan input teks bersih
        const cleanEditInduk = cleanArabicDiacritics(editKataIndukText);
        const matchIndukIndex = dbKataInduk.findIndex(i => i.Kata_Induk_Polos === cleanEditInduk);
        
        if (matchIndukIndex !== -1) {
-         // Update data induk jika ada perubahan manual
          dbKataInduk[matchIndukIndex].Kata_Induk = editKataIndukText;
          dbKataInduk[matchIndukIndex].Arti_Kata_Induk = editArtiIndukText;
          saveToLocalStorage(DB_KEYS.KATA_INDUK, dbKataInduk);
          await postDataToBackend("saveVocab", { jenis_kata: "Induk", ...dbKataInduk[matchIndukIndex] });
          id_kata_induk = dbKataInduk[matchIndukIndex].ID_Kata_Induk;
        } else {
-         // Create Kata Induk baru jika tidak ada
          const nextIdVal = `IND-000${dbKataInduk.length + 45}`;
          const newInduk = {
            ID_Kata_Induk: nextIdVal,
@@ -1674,33 +1670,27 @@
 
      for (const r of rows) {
        const slot = r.querySelector(".row-slot").value;
-       const bentuk = r.querySelector(".row-bentuk").value;
-       const jenis = r.querySelector(".row-jenis").value || "imbuhan otomatis";
+       const bentuk = r.querySelector(".row-bentuk").value.trim();
+       const fungsiVal = r.querySelector(".row-fungsi").value.trim() || "imbuhan otomatis";
 
        if (bentuk && slot) {
-         sambunganData[slot] = bentuk;
-         
-         const dualWriteData = {
-           ID_Teks: stateActiveText.ID_Teks || "",
-           Kata_Sambung: bentuk,
-           Tipe_Sambungan: jenis,
-           Level: stateActiveText.Tingkat_Kesulitan || "Pemula",
-           Arti_Sambungan: jenis,
-           Aturan_Tata_Bahasa: "Aturan imbuhan dasar"
-         };
-         
-         await postDataToBackend("saveAffix", dualWriteData);
-
-         const exists = dbMasterSambungan.find(s => s.Bentuk_Sambungan === bentuk);
-         if (!exists) {
+         // IMPLEMENTASI RELASIONAL ID_SAMBUNGAN
+         let match = dbMasterSambungan.find(s => s.Bentuk_Sambungan === bentuk);
+         if (!match) {
            const letak = slot.toLowerCase().includes("awal") ? "awal" : "akhir";
-           dbMasterSambungan.push({
+           const generatedId = "SAM-" + (letak === "awal" ? "PRE-" : "SU-") + Math.floor(1000 + Math.random() * 9000);
+           match = {
+             ID_Sambungan: generatedId,
              Bentuk_Sambungan: bentuk,
              Letak_Sambungan: letak,
-             Jenis_Sambungan: jenis
-           });
+             Fungsi_Sambungan: fungsiVal,
+             Jenis_Sambungan: fungsiVal
+           };
+           dbMasterSambungan.push(match);
            saveToLocalStorage(DB_KEYS.SAMBUNGAN, dbMasterSambungan);
          }
+         // Menyimpan ID_Sambungan (referensi relasional), bukan string literal
+         sambunganData[slot] = match.ID_Sambungan;
        }
      }
 
@@ -1710,7 +1700,7 @@
      const targetRecord = {
        ID_Kosakata: existingIndex !== -1 ? dbPetaKosakata[existingIndex].ID_Kosakata : nextVocabId,
        ID_Teks: stateActiveText.ID_Teks || "",
-       Kata_Teks: rawWord, // Menggunakan teks berharakat hasil edit
+       Kata_Teks: rawWord, 
        Kata_Teks_Polos: cleanWord,
        Arti_Kata_Teks: artiTeks,
        ID_Kata_Induk: id_kata_induk || "",
@@ -1718,10 +1708,8 @@
      };
 
      if (existingIndex !== -1) {
-       // UPDATE Rekaman yang sudah ada (mencegah duplikasi)
        dbPetaKosakata[existingIndex] = targetRecord;
      } else {
-       // Tambah Rekaman Baru
        dbPetaKosakata.push(targetRecord);
      }
 
@@ -1735,7 +1723,6 @@
      }
    }
 
-   // Hapus dari antrean lokal
    stateWordQueue = stateWordQueue.filter(item => item.word_clean !== cleanWord);
 
    closeVocabModal();
@@ -1782,14 +1769,12 @@
    document.getElementById("user-modal-kata-teks").innerText = raw;
    document.getElementById("user-modal-arti-teks").innerText = "Arti kata belum dipetakan admin.";
    
-   // Reset Relasi Panel Dinamik
    document.getElementById("user-modal-kata-induk").innerText = "-";
    document.getElementById("user-modal-arti-induk").innerText = "-";
    document.getElementById("user-modal-kategori").innerText = "-";
    document.getElementById("user-modal-sambungan-awal").innerText = "-";
    document.getElementById("user-modal-sambungan-akhir").innerText = "-";
 
-   // Reset Relasi Panel Mode A
    document.getElementById("user-modal-induk-kata").innerText = "-";
    document.getElementById("user-modal-induk-kategori").innerText = "-";
    document.getElementById("user-modal-induk-arti").innerText = "-";
@@ -1797,7 +1782,6 @@
    const relasiSectionModeA = document.getElementById("user-modal-induk-asli-layout");
    const relasiSectionModeB = document.getElementById("user-modal-relasi-section");
 
-   // Cek Imbuhan terlebih dahulu untuk menentukan apakah dia benar-benar kata dasar murni dalam teks ini
    let hasImbuhan = false;
    if (vocabMatch) {
      const awals = [vocabMatch.Sambungan_Awal_1, vocabMatch.Sambungan_Awal_2, vocabMatch.Sambungan_Awal_3].filter(Boolean);
@@ -1807,30 +1791,39 @@
      }
    }
 
+   // Fungsi pembantu menterjemahkan ID ke Bentuk Sambungan Visual
+   const translateIdToVisual = (val) => {
+     if (!val) return "";
+     const match = dbMasterSambungan.find(s => s.ID_Sambungan === val || s.Bentuk_Sambungan === val);
+     return match ? match.Bentuk_Sambungan : val;
+   };
+
    if (directInduk && !hasImbuhan) {
-     // Skenario 1 (Sesuai Iterasi): Kata dasar berharakat asli dalam teks tanpa imbuhan. Tampilkan MODE A
      document.getElementById("user-modal-arti-teks").innerText = directInduk.Arti_Kata_Induk;
      
      relasiSectionModeA.classList.remove("hidden");
      relasiSectionModeB.classList.add("hidden");
 
-     document.getElementById("user-modal-induk-kata").innerText = directInduk.Kata_Induk; // Contoh: يَوْمٌ (Satu kata induk murni)
+     document.getElementById("user-modal-induk-kata").innerText = directInduk.Kata_Induk; 
      document.getElementById("user-modal-induk-kategori").innerText = directInduk.Kategori || "Isim";
      document.getElementById("user-modal-induk-arti").innerText = directInduk.Arti_Kata_Induk;
 
    } else if (vocabMatch) {
-     // Skenario 2: Kata Gabungan/Memiliki Imbuhan. Tampilkan MODE B (Panel dinamis 3 kolom)
      document.getElementById("user-modal-arti-teks").innerText = vocabMatch.Arti_Kata_Teks;
      
      relasiSectionModeA.classList.add("hidden");
      relasiSectionModeB.classList.remove("hidden");
 
-     // Tampilkan Imbuhan Sambungan Awal (jika ada)
-     const awals = [vocabMatch.Sambungan_Awal_1, vocabMatch.Sambungan_Awal_2, vocabMatch.Sambungan_Awal_3].filter(Boolean);
+     // Terjemahkan ID Sambungan Awal ke representasi visual luring
+     const awals = [vocabMatch.Sambungan_Awal_1, vocabMatch.Sambungan_Awal_2, vocabMatch.Sambungan_Awal_3]
+       .filter(Boolean)
+       .map(translateIdToVisual);
      document.getElementById("user-modal-sambungan-awal").innerText = awals.length > 0 ? awals.join(" + ") : "-";
 
-     // Tampilkan Imbuhan Sambungan Akhir (jika ada)
-     const akhirs = [vocabMatch.Sambungan_Akhir_1, vocabMatch.Sambungan_Akhir_2, vocabMatch.Sambungan_Akhir_3].filter(Boolean);
+     // Terjemahkan ID Sambungan Akhir ke representasi visual luring
+     const akhirs = [vocabMatch.Sambungan_Akhir_1, vocabMatch.Sambungan_Akhir_2, vocabMatch.Sambungan_Akhir_3]
+       .filter(Boolean)
+       .map(translateIdToVisual);
      document.getElementById("user-modal-sambungan-akhir").innerText = akhirs.length > 0 ? akhirs.join(" + ") : "-";
 
      if (vocabMatch.ID_Kata_Induk) {
@@ -1842,7 +1835,6 @@
        }
      }
    } else {
-     // Belum Terpetakan
      relasiSectionModeA.classList.add("hidden");
      relasiSectionModeB.classList.add("hidden");
    }
