@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerbang Masuk Admin - MEB</title>
+  
+  <!-- Fonts Premium -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Memuat Script Autentikasi Terlebih Dahulu -->
+  <script src="js/auth.js"></script>
+  <script>
+    // Penjaga Rute Instan: Jika admin sudah memiliki sesi aktif, langsung lempar ke index.html
+    checkAdminSession();
+  </script>
+</head>
+<body class="bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen p-4 font-sans selection:bg-emerald-500 selection:text-white">
+
+  <!-- Kontainer Utama Login Card -->
+  <div class="w-full max-w-md bg-slate-800 border border-slate-700/60 rounded-2xl shadow-2xl p-8 backdrop-blur-md transition-all duration-300 hover:border-emerald-500/30">
+    
+    <!-- Logo & Tajuk -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-400 mb-4 ring-1 ring-emerald-500/30 animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-white">Panel Kontrol Admin</h1>
+      <p class="text-slate-400 text-sm mt-1.5">Membaca Ekstensif Bertingkat Bahasa Arab</p>
+    </div>
+
+    <!-- Form Input Password -->
+    <form id="login-form" onsubmit="submitLogin(event)" class="space-y-6">
+      
+      <!-- Input Wrapper -->
+      <div class="space-y-2">
+        <label for="admin-password" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Kata Sandi Keamanan</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v-2l2-2 1.482-1.482A6 6 0 0118 8zm-2 0a2 2 0 10-4 0 2 2 0 004 0z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <input 
+            type="password" 
+            id="admin-password" 
+            required
+            placeholder="Masukkan kata sandi admin..." 
+            class="w-full pl-11 pr-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-white placeholder-slate-500 transition-all duration-200 text-sm"
+          >
+        </div>
+      </div>
+
+      <!-- Kotak Umpan Balik Pesan (Toast/Inline Message) -->
+      <div id="feedback-box" class="hidden p-3.5 rounded-xl border text-sm transition-all duration-300"></div>
+
+      <!-- Tombol Submit -->
+      <button 
+        type="submit" 
+        id="btn-login-submit"
+        class="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-950/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all duration-200 active:scale-[0.98] flex items-center justify-center text-sm"
+      >
+        <span>Masuk ke Panel</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.141L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+
+    </form>
+
+    <!-- Informasi Catatan Keamanan Kaki -->
+    <div class="text-center mt-8 pt-6 border-t border-slate-700/40">
+      <p class="text-xs text-slate-500 leading-relaxed">
+        Sistem ini diamankan menggunakan enkripsi hash satu arah sisi klien. 
+        Sesi akan kedaluwarsa secara otomatis saat browser ditutup.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Logika Pengendali Event UI Halaman Login -->
+  <script>
+    async function submitLogin(e) {
+      e.preventDefault();
+      
+      const passwordField = document.getElementById("admin-password");
+      const submitBtn = document.getElementById("btn-login-submit");
+      const feedbackBox = document.getElementById("feedback-box");
+      const inputPassword = passwordField.value;
+
+      // Ubah status tombol menjadi loading
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Memvalidasi Sesi...
+      `;
+
+      // Sembunyikan feedback lama
+      feedbackBox.className = "hidden p-3.5 rounded-xl border text-sm transition-all duration-300";
+
+      // Berikan jeda interaksi 600ms buatan agar animasi loading terlihat natural & elegan
+      setTimeout(async () => {
+        await handleAdminLogin(
+          inputPassword,
+          // Callback jika sukses:
+          () => {
+            feedbackBox.className = "p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-medium";
+            feedbackBox.innerHTML = "Akses diterima! Mengarahkan Anda ke dasbor...";
+            feedbackBox.classList.remove("hidden");
+            
+            passwordField.value = "";
+            
+            // Alihkan ke Dashboard utama setelah sukses animasi
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 1200);
+          },
+          // Callback jika gagal:
+          (errorMessage) => {
+            feedbackBox.className = "p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 text-sm font-medium";
+            feedbackBox.innerHTML = errorMessage;
+            feedbackBox.classList.remove("hidden");
+            
+            // Kembalikan tombol ke keadaan semula
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `
+              <span>Masuk ke Panel</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.141L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            `;
+            
+            passwordField.focus();
+            passwordField.select();
+          }
+        );
+      }, 600);
+    }
+  </script>
+</body>
+</html>
