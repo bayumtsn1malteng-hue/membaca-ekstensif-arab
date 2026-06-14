@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Membaca Ekstensif Bertingkat (MEB) - User v0.5.5-alpha</title>
+
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#14b8a6">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,7 +46,7 @@
   <style>
     /* Spasi baris vertikal ekstra longgar khusus untuk harakat Arab yang sangat padat */
     .arabic-text {
-      line-height: 4.2;
+      line-height: 2.2;
       direction: rtl;
     }
     .word-span {
@@ -98,9 +103,9 @@
       <button onclick="toggleDarkMode()" class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition">
         <i id="theme-icon-mobile" class="fa-solid fa-moon text-xs"></i>
       </button>
-      <div class="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-650 dark:text-slate-300 font-bold text-[9px]" id="header-avatar">
+      <button onclick="handleAvatarClick()" class="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-655 dark:text-slate-300 font-bold text-[9px] hover:ring-2 hover:ring-brand-500 transition cursor-pointer border-none outline-none" id="header-avatar" title="Login / Daftar">
         G
-      </div>
+      </button>
     </div>
   </header>
 
@@ -148,9 +153,9 @@
       <!-- Area Profil & Switch Dark Mode -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-xs" id="sidebar-avatar">
+          <button onclick="handleAvatarClick()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-xs hover:ring-2 hover:ring-brand-500 transition cursor-pointer border-none outline-none" id="sidebar-avatar" title="Login / Daftar">
             G
-          </div>
+          </button>
           <div class="flex flex-col">
             <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate max-w-[100px]" id="sidebar-name">Guest Mode</span>
             <button onclick="logout()" id="sidebar-logout-btn" class="hidden text-[10px] text-rose-500 hover:text-rose-650 text-left font-semibold transition" title="Log Out">
@@ -277,7 +282,19 @@
           <button onclick="switchView('library')" class="text-xs font-bold text-slate-500 hover:text-brand-600 transition flex items-center gap-1.5">
             <i class="fa-solid fa-arrow-left"></i> Kembali ke Pustaka
           </button>
-          <span class="text-[10px] font-extrabold px-3 py-1 rounded bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 uppercase tracking-wider" id="reader-difficulty">Pemula</span>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700">
+              <button onclick="adjustReaderFont(-1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-500" title="Perkecil Font"><i class="fa-solid fa-minus text-[10px]"></i></button>
+              <button onclick="resetReaderSettings()" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-400" title="Reset Tampilan"><i class="fa-solid fa-rotate-left text-[10px]"></i></button>
+              <button onclick="adjustReaderFont(1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-500" title="Perbesar Font"><i class="fa-solid fa-plus text-[10px]"></i></button>
+            </div>
+            <!-- Slider Spasi Baris -->
+            <div class="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-2 sm:px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-700" title="Atur Jarak Baris">
+              <i class="fa-solid fa-arrows-up-down text-[10px] text-slate-400"></i>
+              <input type="range" min="1" max="7" step="0.1" value="3.2" id="line-height-slider" oninput="adjustReaderLineHeight(this.value)" class="w-12 sm:w-24 h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-600">
+            </div>
+            <span class="hidden sm:inline-block text-[10px] font-extrabold px-3 py-1 rounded bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 uppercase tracking-wider" id="reader-difficulty">Pemula</span>
+          </div>
         </div>
 
         <!-- Canvas Membaca Premium -->
@@ -288,10 +305,17 @@
           </div>
 
           <!-- Arabic Canvas Area -->
-          <div id="reader-canvas" class="arabic-text text-3xl sm:text-4xl text-slate-900 dark:text-slate-100 font-arabic select-none space-y-8">
-            <!-- Teks Arab dipasang via JS -->
-          </div>
+          <div class="flex gap-4 items-start">
+            <!-- Slider Vertikal (Hanya Mobile/HP) -->
+            <div class="sm:hidden flex flex-col items-center justify-center p-2 bg-slate-100/50 dark:bg-slate-800/30 rounded-full border border-slate-200/50 dark:border-slate-700/50 sticky top-20">
+              <i class="fa-solid fa-arrows-up-down text-[8px] text-slate-400 mb-2"></i>
+              <input type="range" min="1" max="7" step="0.1" value="3.2" id="line-height-slider-v" oninput="adjustReaderLineHeight(this.value)" class="h-48 w-1 appearance-none bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer accent-brand-600" style="-webkit-appearance: slider-vertical;">
+            </div>
 
+            <div id="reader-canvas" class="flex-grow arabic-text text-3xl sm:text-4xl text-slate-900 dark:text-slate-100 font-arabic select-none space-y-8">
+              <!-- Teks Arab dipasang via JS -->
+            </div>
+          </div>
           <!-- Legenda Visual Skema Highlight Leitner -->
           <div class="border-t border-slate-100 dark:border-slate-800 pt-4">
             <div class="flex flex-wrap items-center gap-2 px-3 py-3 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-150 dark:border-slate-800 text-[9px] font-extrabold tracking-wide uppercase">
@@ -521,9 +545,10 @@
         </div>
 
         <!-- Informasi Kata Terpilih -->
-        <div class="text-center bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-150 dark:border-slate-800/80">
-          <span class="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">Kata Terpilih</span>
-          <span class="text-4xl font-bold font-arabic text-brand-600 dark:text-brand-400 block mt-1" id="dict-word-text">-</span>
+        <div class="text-center bg-slate-50 dark:bg-slate-900/50 p-6 sm:p-8 rounded-[2.5rem] border border-slate-150 dark:border-slate-800/80">
+          <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider mb-2">Kata Terpilih</span>
+          <span class="text-5xl sm:text-6xl font-bold font-arabic text-brand-600 dark:text-brand-400 block leading-tight" id="dict-word-text">-</span>
+          <p id="dict-word-meaning-header" class="text-xl font-bold text-slate-900 dark:text-slate-100 mt-3 italic">-</p>
         </div>
 
         <!-- PANEL MODE A -->
@@ -576,13 +601,23 @@
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-[11px] text-slate-500">
       <p>© 2026 Membaca Ekstensif Bertingkat (MEB). Dilisensikan untuk E-Reader Pribadi.</p>
-      <p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.5.5-alpha</p>
+      <a href="https://bayumtsn1malteng-hue.github.io/membaca-ekstensif-arab/admin/login.html"><p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.5.5-alpha</p></a>
     </footer>
   </div>
 
   <!-- ==========================================
        LOGIKA JAVASCRIPT (STATE, ENGINE, API)
        ========================================== -->
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker terdaftar', reg))
+          .catch(err => console.log('Pendaftaran SW gagal', err));
+      });
+    }
+  </script>
   <script>
     // --- 0. STATE UTAMA APLIKASI ---
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'meb-ext-reader';
@@ -598,6 +633,8 @@
       currentReadingText: null,
       activeWordSelected: null,
       selectedBoxFilter: 'semua',
+      readerFontSize: Number(localStorage.getItem('meb_reader_font_size') || 36),
+      readerLineHeight: Number(localStorage.getItem('meb_reader_line_height') || 3.2),
       leitnerSessionWords: [],
       leitnerSessionIndex: 0
     };
@@ -924,6 +961,15 @@
       switchView('login');
     }
 
+    /**
+     * Menangani klik pada avatar. Jika dalam mode guest, arahkan ke login/register.
+     */
+    function handleAvatarClick() {
+      if (!appState.currentUser || appState.currentUser.userId === 'USR-GUEST') {
+        logout(); // Membersihkan sesi guest dan beralih ke tampilan login
+      }
+    }
+
     // --- STREAMING_CHUNK: Managing local and external API servers... ---
     // --- 4. INTEGRASI DATABASE SERVER (API UTILITY) ---
     async function loadMockData(clear) {
@@ -1042,8 +1088,23 @@
 
         // --- PENGHITUNGAN METRIK STATISTIK ---
         const totalWords = text.Konten_Arab ? text.Konten_Arab.split(/\s+/).filter(Boolean).length : 0;
+
+        // Menghitung Kata Unik: Scan isi teks dan validasi terhadap database Peta_Kosakata global yang memiliki ID_Kata_Induk
+        const tokens = text.Konten_Arab ? text.Konten_Arab.split(/\s+/).filter(Boolean) : [];
+        const validMappedSet = new Set();
+        tokens.forEach(token => {
+          const clean = normalizeArabic(token.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟،]/g,""));
+          if (!clean) return;
+          
+          const isMappable = appState.petaKosakata.some(m => 
+            (normalizeArabic(m.Kata_Teks) === clean || normalizeArabic(m.Kata_Teks_Polos) === clean) && 
+            m.ID_Kata_Induk
+          );
+          if (isMappable) validMappedSet.add(clean);
+        });
+        const uniqueCleanWordsCount = validMappedSet.size;
+
         const mappedItems = appState.petaKosakata.filter(m => m.ID_Teks === text.ID_Teks);
-        const uniqueCleanWordsCount = [...new Set(mappedItems.map(m => m.Kata_Teks_Polos))].length;
 
         const learningCount = appState.kamusUser ? appState.kamusUser.filter(ku => {
           const isLearning = [1, 2, 3, 4, 5].includes(Number(ku.Status_Belajar));
@@ -1144,6 +1205,13 @@
 
       const canvas = document.getElementById('reader-canvas');
       canvas.innerHTML = '';
+      canvas.style.fontSize = `${appState.readerFontSize}px`;
+
+      // Sinkronkan Slider UI dengan State Terkini
+      const slider = document.getElementById('line-height-slider');
+      if (slider) slider.value = appState.readerLineHeight;
+      const sliderV = document.getElementById('line-height-slider-v');
+      if (sliderV) sliderV.value = appState.readerLineHeight;
 
       const content = text.Konten_Arab || "";
       const rawSentences = content.split(/[.\n]+/);
@@ -1154,6 +1222,8 @@
 
         const sentenceBlock = document.createElement('div');
         sentenceBlock.className = "sentence-block mb-8 pb-4 pr-4 border-r-4 border-brand-500/20 text-right leading-[3.8] sm:leading-[4.8] transition-all duration-150";
+        sentenceBlock.className = "sentence-block mb-8 pb-4 pr-4 border-r-4 border-brand-500/20 text-right transition-all duration-150";
+        sentenceBlock.style.lineHeight = appState.readerLineHeight;
         sentenceBlock.dir = "rtl";
 
         const words = trimmedSentence.split(/(\s+)/);
@@ -1218,6 +1288,79 @@
       });
 
       switchView('reader');
+    }
+
+    /**
+     * Mengatur ukuran font pada reader canvas secara interaktif
+     * @param {number} dir - Arah perubahan (-1 untuk perkecil, 1 untuk perbesar)
+     */
+    function adjustReaderFont(dir) {
+      // 1. Update Ukuran Font (Kelipatan 3px)
+      appState.readerFontSize = Math.max(18, Math.min(72, appState.readerFontSize + (dir * 3)));
+      
+      // 2. Update Spasi Baris Secara Proporsional (Kenaikan 0.1 multiplier)
+      appState.readerLineHeight = Number((Math.max(1, Math.min(7, parseFloat(appState.readerLineHeight) + (dir * 0.1)))).toFixed(1));
+      
+      // Simpan ke localStorage
+      localStorage.setItem('meb_reader_font_size', appState.readerFontSize);
+      localStorage.setItem('meb_reader_line_height', appState.readerLineHeight);
+
+      // 3. Sinkronkan Slider UI di Header
+      const slider = document.getElementById('line-height-slider');
+      if (slider) slider.value = appState.readerLineHeight;
+      const sliderV = document.getElementById('line-height-slider-v');
+      if (sliderV) sliderV.value = appState.readerLineHeight;
+
+      const canvas = document.getElementById('reader-canvas');
+      if (canvas) {
+        canvas.style.fontSize = `${appState.readerFontSize}px`;
+        // Terapkan perubahan spasi ke seluruh blok teks yang sudah ada
+        const blocks = document.querySelectorAll('.sentence-block');
+        blocks.forEach(block => block.style.lineHeight = appState.readerLineHeight);
+      }
+    }
+
+    /**
+     * Mengatur ketinggian baris (line-height) secara interaktif via slider
+     * @param {number} val - Nilai multiplier spasi baris
+     */
+    function adjustReaderLineHeight(val) {
+      appState.readerLineHeight = Number(val);
+      localStorage.setItem('meb_reader_line_height', val);
+
+      // Sinkronkan kedua slider
+      const hSlider = document.getElementById('line-height-slider');
+      const vSlider = document.getElementById('line-height-slider-v');
+      if (hSlider) hSlider.value = val;
+      if (vSlider) vSlider.value = val;
+
+      const blocks = document.querySelectorAll('.sentence-block');
+      blocks.forEach(block => {
+        block.style.lineHeight = val;
+      });
+    }
+
+    /**
+     * Mengembalikan pengaturan font dan spasi ke nilai standar
+     */
+    function resetReaderSettings() {
+      appState.readerFontSize = 36;
+      appState.readerLineHeight = 3.2;
+      localStorage.setItem('meb_reader_font_size', 36);
+      localStorage.setItem('meb_reader_line_height', 3.2);
+
+      const slider = document.getElementById('line-height-slider');
+      if (slider) slider.value = 3.2;
+      const sliderV = document.getElementById('line-height-slider-v');
+      if (sliderV) sliderV.value = 3.2;
+
+      const canvas = document.getElementById('reader-canvas');
+      if (canvas) {
+        canvas.style.fontSize = `36px`;
+        const blocks = document.querySelectorAll('.sentence-block');
+        blocks.forEach(block => block.style.lineHeight = 3.2);
+      }
+      showModal("Pengaturan Direset", "Ukuran font dan spasi baris dikembalikan ke standar.", "fa-solid fa-rotate-left text-brand-600");
     }
 
     function cleanArabicHarakat(text) {
@@ -1372,7 +1515,8 @@
           }
         }
 
-        document.getElementById('dict-custom-meaning').value = mapping.Arti_Kata_Teks;
+        document.getElementById('dict-custom-meaning').value = "";
+        document.getElementById('dict-word-meaning-header').textContent = mapping.Arti_Kata_Teks || "Belum ada arti";
       } else {
         document.getElementById('kamus-mode-tag').textContent = "Tanpa Relasi";
         document.getElementById('kamus-mode-tag').className = "text-[9px] uppercase font-bold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500";
@@ -1383,6 +1527,7 @@
         document.getElementById('modea-root-meaning').textContent = "Kata mandiri (belum didefinisikan)";
         
         document.getElementById('dict-custom-meaning').value = "";
+        document.getElementById('dict-word-meaning-header').textContent = "Kata mandiri (belum didefinisikan)";
         appState.activeWordSelected.idKataInduk = "";
       }
 
@@ -1443,7 +1588,7 @@
       const userId = appState.currentUser.userId;
       const wordPolos = appState.activeWordSelected.polos;
       const idKataInduk = appState.activeWordSelected.idKataInduk || "IND-NASKAH";
-      const customMeaning = document.getElementById('dict-custom-meaning').value || "Belum ada arti";
+      const customMeaning = document.getElementById('dict-custom-meaning').value.trim();
 
       if (appState.isMockMode) {
         const exist = appState.kamusUser.some(k => k.Kata_Polos === wordPolos && k.ID_User === userId);
@@ -1622,11 +1767,20 @@
 
     function revealLeitnerCard() {
       const word = appState.leitnerSessionWords[appState.leitnerSessionIndex];
-      const mapping = appState.petaKosakata.find(m => m.Kata_Teks_Polos === word.Kata_Polos);
-      const originalMeaning = mapping ? mapping.Arti_Kata_Teks : "Belum diartikan di naskah";
+      // Mengambil arti dari Kata Induk
+      const parentWord = appState.kataInduk.find(ki => ki.ID_Kata_Induk === word.ID_Kata_Induk);
+      const originalMeaning = parentWord ? parentWord.Arti_Kata_Induk : "Belum ada arti induk";
 
       document.getElementById('leitner-word-meaning').textContent = originalMeaning;
-      document.getElementById('leitner-word-custom').textContent = `Arti Kustom: ${word.Arti_Kustom}`;
+      
+      const customEl = document.getElementById('leitner-word-custom');
+      // Tampilkan hanya jika ada input kustom dari user (tidak kosong) dan bukan merupakan duplikasi dari arti induk
+      if (word.Arti_Kustom && word.Arti_Kustom.trim() !== "" && word.Arti_Kustom !== originalMeaning) {
+        customEl.classList.remove('hidden');
+        customEl.textContent = `Arti Kustom: ${word.Arti_Kustom}`;
+      } else {
+        customEl.classList.add('hidden');
+      }
 
       document.getElementById('leitner-meaning-box').classList.remove('hidden');
       document.getElementById('btn-reveal-leitner').classList.add('hidden');
