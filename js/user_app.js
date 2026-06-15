@@ -1,6 +1,6 @@
 /**
  * MODUL UTAMA APLIKASI USER (USER APP MODULE)
- * Versi: v0.5.6-alpha (Fase 2 - Modular)
+ * Versi: v0.5.7-alpha (Fase 2 - Modular)
  * ID Unik: MEB-USER-APP-001
  *
  * Modul ini mengelola:
@@ -38,7 +38,8 @@ let appState = {
   readerFontSize: Number(localStorage.getItem('meb_reader_font_size') || 36),
   readerLineHeight: Number(localStorage.getItem('meb_reader_line_height') || 3.2),
   leitnerSessionWords: [],
-  leitnerSessionIndex: 0
+  leitnerSessionIndex: 0,
+  leitnerReviewResults: [] // Array to store results for bulk submission
 };
 
 // ============================================================
@@ -596,64 +597,78 @@ async function submitLeitnerResult(isCorrect) {
   const word = appState.leitnerSessionWords[appState.leitnerSessionIndex];
 
   if (appState.isMockMode) {
+    // Existing mock mode logic
     const itemIndex = appState.kamusUser.findIndex(k => k.ID_User_Word === word.ID_User_Word);
     if (itemIndex !== -1) {
       const current = appState.kamusUser[itemIndex];
       if (isCorrect) {
         current.Streak_Benar++;
         if (current.Status_Belajar < 5) {
-          current.Status_Belajar++;
+          current.Status_Belajar = Number(current.Status_Belajar) + 1; // Ensure it's a number
         } else {
           current.Status_Belajar = 'Known';
         }
       } else {
-        current.Status_Belajar = 1;
+        current.Status_Belajar = 1; // Reset to Box 1
         current.Streak_Benar = 0;
       }
-      current.Tanggal_Review_Berikutnya = new Date(Date.now() + 86400000 * (isCorrect ? current.Status_Belajar : 1)).toISOString();
+      // Calculate next review date based on Leitner box system
+      const reviewIntervals = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16, 'Known': 30 }; // Days for review intervals
+      const nextReviewDays = reviewIntervals[current.Status_Belajar] || 1; // Default to 1 day if not found
+      current.Tanggal_Review_Berikutnya = new Date(Date.now() + nextReviewDays * 24 * 60 * 60 * 1000).toISOString();
     }
     localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
     nextLeitnerCard();
   } else {
-    try {
-      const res = await apiCall({
-        action: "reviewWord",
-        userId: appState.currentUser.userId,
+    // Pastikan hasil disimpan sebagai objek bersih untuk bulk submission
+    if (word && word.ID_User_Word) {
+      appState.leitnerReviewResults.push({
         idUserWord: word.ID_User_Word,
-        isCorrect: isCorrect
+        isCorrect: isCorrect === true
       });
-      if (res.success) {
-        const itemIndex = appState.kamusUser.findIndex(k => k.ID_User_Word === word.ID_User_Word);
-        if (itemIndex !== -1) {
-          appState.kamusUser[itemIndex].Status_Belajar = res.nextBox;
-          appState.kamusUser[itemIndex].Tanggal_Review_Berikutnya = res.nextReview;
-          appState.kamusUser[itemIndex].Streak_Benar = res.streak;
-        }
-        localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
-        nextLeitnerCard();
-      }
-    } catch (err) {
-      showModal("Evaluasi Gagal", err.toString(), "fa-solid fa-triangle-exclamation text-red-500");
     }
+
+    // Update local kamusUser immediately for UI consistency (similar to mock mode logic)
+    const itemIndex = appState.kamusUser.findIndex(k => k.ID_User_Word === word.ID_User_Word);
+    if (itemIndex !== -1) {
+      const current = appState.kamusUser[itemIndex];
+      // Apply Leitner box logic locally
+      if (isCorrect) {
+        current.Streak_Benar++;
+        if (current.Status_Belajar < 5) {
+          current.Status_Belajar = Number(current.Status_Belajar) + 1; // Ensure it's a number
+        } else {
+          current.Status_Belajar = 'Known';
+        }
+      } else {
+        current.Status_Belajar = 1; // Reset to Box 1
+        current.Streak_Benar = 0;
+      }
+      // Calculate next review date based on Leitner box system
+      const reviewIntervals = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16, 'Known': 30 }; // Days for review intervals
+      const nextReviewDays = reviewIntervals[current.Status_Belajar] || 1; // Default to 1 day if not found
+      current.Tanggal_Review_Berikutnya = new Date(Date.now() + nextReviewDays * 24 * 60 * 60 * 1000).toISOString();
+    }
+    localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
+    nextLeitnerCard();
   }
 }
 
 /**
  * Berpindah ke kartu Leitner berikutnya atau menyelesaikan sesi
  */
-function nextLeitnerCard() {
+async function nextLeitnerCard() { // Made async to await apiCall
   appState.leitnerSessionIndex++;
   if (appState.leitnerSessionIndex < appState.leitnerSessionWords.length) {
     loadLeitnerCard();
   } else {
-    closeLeitnerSession();
-    updateDashboardStats();
+    // Panggil penutup sesi yang akan menangani sinkronisasi terakhir secara otomatis
+    await closeLeitnerSession(); 
 
+    updateDashboardStats();
     if (appState.currentReadingText) {
       loadReader(appState.currentReadingText.ID_Teks);
     }
-
-    showModal("Latihan Selesai!", "Sesi hafalan Spaced Repetition selesai.", "fa-solid fa-award text-teal-600");
   }
 }
 

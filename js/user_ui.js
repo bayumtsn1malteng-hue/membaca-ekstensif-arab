@@ -1,6 +1,6 @@
 /**
  * MODUL UI USER (USER UI MODULE)
- * Versi: v0.5.6-alpha (Fase 1 - Modular)
+ * Versi: v0.5.7-alpha (Fase 1 - Modular)
  * ID Unik: MEB-USER-UI-001
  * * Modul ini menangani seluruh rendering visual, manipulasi DOM,
  * pergantian screen (routing), pengaturan font/line-height, dan dialog modal.
@@ -659,11 +659,45 @@ function revealLeitnerCard() {
 }
 
 /**
- * Menutup modal sesi latihan Leitner
+ * Menutup modal sesi latihan Leitner dan melakukan sinkronisasi jika ada hasil tertunda
  */
-function closeLeitnerSession() {
+async function closeLeitnerSession() {
   document.getElementById('leitner-modal').classList.add('hidden');
+
+  // Bulk submit results if not in mock mode and there are pending results
+  if (!appState.isMockMode && appState.leitnerReviewResults.length > 0) {
+    showModal("Mengirim Hasil Latihan", "Mengirimkan hasil sesi Leitner Anda ke server...", "fa-solid fa-cloud-arrow-up animate-pulse text-brand-600");
+    try {
+      const res = await apiCall({
+        action: "bulkReviewWords", // New action for bulk submission
+        userId: appState.currentUser.userId,
+        reviews: appState.leitnerReviewResults // Array of { idUserWord, isCorrect }
+      });
+
+      console.log("[Sync] Response from backend:", res);
+
+      // Cek sukses dengan lebih fleksibel (handle case-insensitive dan berbagai format GAS)
+      const isSuccess = res && (res.success === true || (res.status && res.status.toLowerCase() === "success"));
+
+      if (isSuccess) {
+        showModal("Sinkronisasi Sukses", "Hasil sesi Leitner berhasil disimpan ke Google Sheets Anda.", "fa-solid fa-cloud-check text-brand-500");
+        appState.leitnerReviewResults = []; // Clear pending results
+        await pullUserKamusFromServer(); // Refresh user kamus from server to get latest state
+      } else {
+        showModal("Gagal Sinkronisasi", res.error || "Terjadi kesalahan saat mengirim hasil sesi.", "fa-solid fa-circle-xmark text-rose-500");
+      }
+    } catch (err) {
+      showModal("Kesalahan Koneksi", "Gagal menghubungi server untuk mengirim hasil sesi: " + err.toString(), "fa-solid fa-triangle-exclamation text-amber-500");
+    } finally {
+      // Ensure modal is closed after showing result, or after a short delay
+      setTimeout(closeModal, 3000); // Close after 3 seconds
+    }
+  } else {
+    // If no pending results or in mock mode, just show session finished message
+    showModal("Latihan Selesai!", "Sesi hafalan Spaced Repetition selesai.", "fa-solid fa-award text-teal-600");
+  }
 }
+
 
 /**
  * Menutup modal jendela kamus pintar

@@ -53,9 +53,10 @@ function renderLiveArabicFeedback() {
   rawWords.forEach(word => {
     // Gunakan normalizeArabic (bukan cleanArabicDiacritics) agar konsisten dengan sisi User
     // normalizeArabic menangani variasi Alif (أ/إ/آ → ا) dan Tatweel
-    const cleaned = normalizeArabic(word);
-    const vocabMatch = dbPetaKosakata.find(v => normalizeArabic(v.Kata_Teks_Polos) === cleaned);
-    const directIndukMatch = dbKataInduk.find(i => normalizeArabic(i.Kata_Induk_Polos) === cleaned);
+    // Revisi, normalizeArabic mengabaikan sejumlah kata, sehingga dikembalikan ke cleanArabicDiacritics(). Date: 15 Juni 2026 21.02
+    const cleaned = cleanArabicDiacritics(word);
+    const vocabMatch = dbPetaKosakata.find(v => cleanArabicDiacritics(v.Kata_Teks_Polos) === cleaned);
+    const directIndukMatch = dbKataInduk.find(i => cleanArabicDiacritics(i.Kata_Induk_Polos) === cleaned);
     
     let textColorClass = "text-slate-900 bg-white border border-slate-200 hover:bg-slate-100"; 
     let titleTooltip = "Belum terpetakan (Kosakata Baru)";

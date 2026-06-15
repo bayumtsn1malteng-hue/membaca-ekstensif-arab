@@ -1,6 +1,6 @@
 /**
  * MODUL KOMUNIKASI API & SINKRONISASI
- * Versi: v0.5.0-alpha.2
+ * Versi: v0.5.1-alpha
  * ID Unik: MEB-ADMIN-API-001
  * * Modul ini menangani pengiriman data (POST) dan penarikan data (GET) 
  * ke Google Apps Script serta pengelolaan status koneksi (Local vs Live).
