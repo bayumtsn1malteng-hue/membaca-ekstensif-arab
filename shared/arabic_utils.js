@@ -10,7 +10,7 @@
  * @param {string} word - Kata Arab mentah
  * @returns {string} Kata Arab bersih tanpa diakritik
  */
-function cleanArabicDiacritics(word) {
+export function cleanArabicDiacritics(word) {
   const diacriticsRegex = /[\u064B-\u0650\u0652]/g;
   let cleaned = word.replace(diacriticsRegex, "");
   cleaned = cleaned.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟?،!]/g, "");
@@ -22,7 +22,7 @@ function cleanArabicDiacritics(word) {
  * @param {string} word - Kata Arab bersih (tanpa harakat)
  * @returns {Object} Hasil ekstraksi prefiks, kata dasar, dan sufiks
  */
-function arabicLightStemmer(word) {
+export function arabicLightStemmer(word) {
   const prefixes = ["ال", "لل", "بال", "كال", "فال", "وال", "ب", "ل", "ف", "و", "س"];
   const suffixes = ["ون", "ين", "ات", "كما", "كم", "هم", "هن", "ها", "نا", "تم", "ت", "ه", "ي", "ا"];
   
@@ -59,7 +59,7 @@ function arabicLightStemmer(word) {
  * @param {string} text - Teks Arab mentah
  * @returns {string} Teks Arab tanpa harakat
  */
-function cleanArabicHarakat(text) {
+export function cleanArabicHarakat(text) {
   if (!text) return "";
   return String(text).replace(/[\u064B-\u065F\u0670]/g, "");
 }
@@ -69,7 +69,7 @@ function cleanArabicHarakat(text) {
  * @param {string} text - Teks Arab mentah
  * @returns {string} Teks Arab ternormalisasi untuk pencarian database yang akurat
  */
-function normalizeArabic(text) {
+export function normalizeArabic(text) {
   if (text === null || text === undefined) return "";
   let str = String(text).trim();
   str = str.replace(/[\u064B-\u065F\u0670]/g, ""); // Hapus seluruh harakat

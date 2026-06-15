@@ -1,6 +1,6 @@
 /**
  * SISTEM MEMBACA EKSTENSIF BERTINGKAT (MEB) - BACKEND API TERPADU (UJI LATIHAN)
- * Menggabungkan Sisi Admin (v0.5.9-alpha) & Sisi User (Fase 1: Leitner System)
+ * Menggabungkan Sisi Admin (v0.6.0-alpha) & Sisi User (Fase 1: Leitner System)
  * Versi Uji: Penambahan Fitur Latihan & Peningkatan Pemetaan Kosakata
  */
 
@@ -144,6 +144,12 @@ function doPost(e) {
       responseData = deleteMultipleLatihan(requestData.targets);
     } else if (action === "bulkReviewWords") {
       responseData = handleBulkReviewWords(userId, requestData.reviews);
+    } else if (action === "getLatihanQuestions") {
+      responseData = getLatihanQuestions(requestData.setId);
+    } else if (action === "saveExerciseResults") {
+      responseData = saveExerciseResults(userId, requestData.setId, requestData.results);
+    } else if (action === "getExerciseScoreHistory") {
+      responseData = getExerciseScoreHistory(userId, requestData.setId);
     } else {
       throw new Error("Aksi backend tidak dikenali: " + action);
     }
@@ -174,7 +180,8 @@ function initDatabaseStructure() {
     "Kata_Induk": ["ID_Kata_Induk", "Kata_Induk", "Kata_Induk_Polos", "Arti_Kata_Induk", "Kategori"],
     "Sambungan": ["ID_Sambungan", "Bentuk_Sambungan", "Letak_Sambungan", "Jenis_Sambungan", "Fungsi_Sambungan", "Keterangan"],
     "Pustaka_Latihan": ["ID_Himpunan_Latihan", "ID_No_Soal", "Judul_Himpunan_Latihan", "Nomor_Soal", "Teks_Soal", "Pilihan_A", "Pilihan_B", "Pilihan_C", "Pilihan_D", "Pilihan_E", "Jawaban_Benar", "Feedback_Jawaban_Benar", "Feedback_Jawaban_Salah"],
-    "Judul_Himpunan_Latihan": ["ID_Himpunan_Latihan", "Judul_Himpunan_Latihan", "Jumlah_Soal_Terdaftar"].concat(Array.from({length: 100}, (_, i) => `ID_Soal_${i+1}`))
+    "Judul_Himpunan_Latihan": ["ID_Himpunan_Latihan", "Judul_Himpunan_Latihan", "Jumlah_Soal_Terdaftar"].concat(Array.from({length: 100}, (_, i) => `ID_Soal_${i+1}`)),
+    "Progres_Latihan_User": ["ID_Progres_Latihan", "ID_User", "ID_Himpunan_Latihan", "ID_No_Soal", "Jawaban_User", "Status_Benar", "Tanggal_Mengerjakan"]
   };
 
   for (let sheetName in sheets) {
@@ -737,6 +744,135 @@ function handleBulkReviewWords(userId, reviews) {
     updateUserKamusStats(userId);
 
     return { success: true, message: "Sinkronisasi massal dan pembaruan statistik berhasil." };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * Mengambil riwayat skor latihan user untuk himpunan tertentu dari sheet Progres_Latihan_User.
+ * Mengelompokkan catatan berdasarkan Tanggal_Mengerjakan untuk merepresentasikan setiap percobaan.
+ * @param {string} userId - ID User.
+ * @param {string} setId - ID Himpunan Latihan.
+ * @returns {Object} Objek respons berisi status sukses dan data riwayat skor.
+ */
+function getExerciseScoreHistory(userId, setId) {
+  try {
+    const ss = getSpreadsheet();
+    const sheet = ss.getSheetByName("Progres_Latihan_User");
+    if (!sheet) return { success: true, data: [] }; // Tidak ada riwayat jika sheet tidak ada
+
+    const allRecords = sheetToObjects(sheet);
+    const userSetRecords = allRecords.filter(record => 
+      record.ID_User === userId && record.ID_Himpunan_Latihan === setId
+    );
+
+    if (userSetRecords.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    // Kelompokkan catatan berdasarkan 'Tanggal_Mengerjakan' untuk merepresentasikan setiap percobaan
+    const attemptsMap = new Map(); // Key: Tanggal_Mengerjakan (sebagai string ISO), Value: Array of records for that attempt
+
+    userSetRecords.forEach(record => {
+      // Pastikan Tanggal_Mengerjakan adalah objek Date sebelum memanggil toISOString()
+      const dateKey = record.Tanggal_Mengerjakan instanceof Date ? record.Tanggal_Mengerjakan.toISOString() : new Date(record.Tanggal_Mengerjakan).toISOString();
+      if (!attemptsMap.has(dateKey)) {
+        attemptsMap.set(dateKey, []);
+      }
+      attemptsMap.get(dateKey).push(record);
+    });
+
+    const scoreHistory = [];
+    attemptsMap.forEach((attemptRecords, dateKey) => {
+      const totalQuestions = attemptRecords.length;
+      const correctCount = attemptRecords.filter(record => record.Status_Benar === true).length;
+      const scorePercentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
+      
+      scoreHistory.push({
+        Tanggal_Mengerjakan: new Date(dateKey), // Konversi kembali ke objek Date untuk frontend
+        Score_Percentage: parseFloat(scorePercentage.toFixed(2)),
+        Total_Correct: correctCount,
+        Total_Questions: totalQuestions
+      });
+    });
+
+    scoreHistory.sort((a, b) => b.Tanggal_Mengerjakan.getTime() - a.Tanggal_Mengerjakan.getTime()); // Urutkan dari terbaru
+    return { success: true, data: scoreHistory };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * Mengambil data soal lengkap berdasarkan ID_Himpunan_Latihan
+ * Urutan soal disesuaikan dengan mapping di sheet Judul_Himpunan_Latihan
+ * @param {string} setId - ID Himpunan Latihan
+ */
+function getLatihanQuestions(setId) {
+  try {
+    const ss = getSpreadsheet();
+    const sheetJudul = ss.getSheetByName("Judul_Himpunan_Latihan");
+    const sheetPustaka = ss.getSheetByName("Pustaka_Latihan");
+    
+    const judulData = sheetToObjects(sheetJudul);
+    const setEntry = judulData.find(row => row.ID_Himpunan_Latihan === setId);
+    
+    if (!setEntry) throw new Error("Himpunan latihan tidak ditemukan.");
+    
+    // Ambil daftar ID soal dari kolom ID_Soal_1 sampai ID_Soal_100
+    const questionIds = [];
+    for (let i = 1; i <= 100; i++) {
+      const key = "ID_Soal_" + i;
+      if (setEntry[key]) questionIds.push(setEntry[key]);
+    }
+    
+    if (questionIds.length === 0) return { success: true, data: [] };
+    
+    const allQuestions = sheetToObjects(sheetPustaka);
+    // Map untuk memastikan urutan soal sesuai dengan urutan di Judul_Himpunan_Latihan
+    const orderedQuestions = questionIds.map(id => allQuestions.find(q => q.ID_No_Soal === id)).filter(Boolean);
+    
+    return { success: true, data: orderedQuestions };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * Menyimpan hasil latihan user ke sheet Progres_Latihan_User
+ * @param {string} userId - ID User
+ * @param {string} setId - ID Himpunan Latihan
+ * @param {Array} results - Array berisi objek { questionId, userAnswer, isCorrect }
+ */
+function saveExerciseResults(userId, setId, results) {
+  try {
+    const ss = getSpreadsheet();
+    const sheet = ss.getSheetByName("Progres_Latihan_User");
+    if (!sheet) throw new Error("Sheet Progres_Latihan_User tidak ditemukan.");
+    
+    const timestamp = new Date();
+    let correctCount = 0;
+    const rowsToAdd = results.map(res => [
+      "PRG-L-" + Utilities.getUuid().substring(0, 8).toUpperCase(),
+      userId,
+      setId,
+      res.questionId,
+      res.userAnswer,
+      res.isCorrect,
+      timestamp
+    ]);
+    
+    correctCount = results.filter(res => res.isCorrect).length;
+    const totalQuestions = results.length;
+    const scorePercentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
+
+    if (rowsToAdd.length > 0) {
+      const lastRow = sheet.getLastRow();
+      sheet.getRange(lastRow + 1, 1, rowsToAdd.length, 7).setValues(rowsToAdd);
+    }
+    
+    return { success: true, message: "Hasil latihan berhasil disimpan.", score: scorePercentage.toFixed(2) };
   } catch (err) {
     return { success: false, error: err.toString() };
   }

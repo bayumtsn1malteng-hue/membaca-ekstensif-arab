@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MEB Admin - Latihan Soal</title>
+
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#14b8a6">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png"> <!-- TODO: Ganti ikon PWA -->
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            arabic: ['Amiri', 'serif'],
+            arabicSans: ['Noto Sans Arabic', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              900: '#115e59',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Spasi baris vertikal ekstra longgar khusus untuk harakat Arab yang sangat padat */
+    .arabic-text {
+      line-height: 2.2;
+      direction: rtl;
+    }
+    .word-span {
+      padding: 4px 6px;
+      margin: 2px 2px;
+      border-radius: 8px;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+    .view-transition {
+      transition: all 0.2s ease-in-out;
+    }
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col view-transition">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="bg-brand-600 text-white p-1.5 rounded-lg shadow-sm">
+        <i class="fa-solid fa-book-open-reader text-xs"></i>
+      </div>
+      <div>
+        <h1 class="text-xs font-bold text-slate-900 dark:text-white leading-none">MEB Admin</h1>
+        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">Latihan Soal</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="relative"> <!-- Added relative positioning for dropdown -->
+        <!-- User Profile (Sama dengan Sidebar index.html) -->
+        <div onclick="toggleHeaderProfileDropdown(event)" class="hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200/60 dark:hover:bg-slate-700/50 transition">
+          <div class="w-7 h-7 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-[10px]" id="header-avatar">
+            G
+          </div>
+          <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate max-w-[80px]" id="header-name">Guest</span>
+        </div>
+        <!-- Dropdown Menu -->
+        <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg py-1 z-50 hidden border border-slate-100 dark:border-slate-700">
+          <a href="index.html" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <i class="fa-solid fa-user mr-2"></i> Profil
+          </a>
+          <button onclick="window.logout()" class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+            <i class="fa-solid fa-right-from-bracket mr-2"></i> Keluar
+          </button>
+        </div>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button onclick="toggleDarkMode()" class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition">
+        <i id="theme-icon-header" class="fa-solid fa-moon text-xs"></i>
+      </button>
+      <a href="index.html" class="px-3 py-2 bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 text-[10px] font-extrabold uppercase tracking-tight rounded-xl transition hover:bg-brand-100">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Dashboard
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div class="flex-grow flex flex-col min-h-screen">
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6 pb-28 md:pb-8">
+
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Manajemen Latihan Soal</h1>
+
+      <!-- Area Pemilihan Jenis Latihan (Placeholder) -->
+      <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm mb-4">
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Pilih Jenis Latihan</h2>
+        <div class="flex flex-wrap gap-3">
+          <button class="px-5 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-sm shadow-md">Pilihan Ganda</button>
+          <button class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm cursor-not-allowed opacity-70">Cloze Text (Segera Hadir)</button>
+          <button class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm cursor-not-allowed opacity-70">Nahwu (Segera Hadir)</button>
+          <button class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm cursor-not-allowed opacity-70">Sharaf (Segera Hadir)</button>
+        </div>
+      </div>
+
+      <!-- Area Pemilihan Himpunan Latihan -->
+      <div id="set-selection-section" class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Pilih Himpunan Latihan</h2>
+          <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg text-slate-500 font-bold" id="set-count-badge">0 Set</span>
+        </div>
+        <div id="exercise-sets-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="col-span-full py-8 text-center text-slate-400 italic text-xs">
+            Menunggu sinkronisasi data dari server...
+          </div>
+        </div>
+      </div>
+
+      <!-- Container Utama untuk Menampilkan Soal Latihan (Pilihan Ganda) -->
+      
+      <section id="multiple-choice-exercise-section" class="space-y-6 hidden">
+
+        <!-- Control Bar: Mode Toggle & Font Settings -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <button onclick="backToSetSelection()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+            <i class="fa-solid fa-list mr-1.5"></i> Ganti Latihan
+          </button>
+
+          <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+            <button onclick="setExerciseMode('read')" id="btn-mode-read" class="px-4 py-2 rounded-lg text-xs font-bold transition">Mode Baca</button>
+            <button onclick="setExerciseMode('challenge')" id="btn-mode-challenge" class="px-4 py-2 rounded-lg text-xs font-bold transition">Mode Tantangan</button>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700">
+              <button onclick="adjustReaderFont(-1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-500"><i class="fa-solid fa-minus text-[10px]"></i></button>
+              <button onclick="resetReaderSettings()" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-400"><i class="fa-solid fa-rotate-left text-[10px]"></i></button>
+              <button onclick="adjustReaderFont(1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-500"><i class="fa-solid fa-plus text-[10px]"></i></button>
+            </div>
+          </div>
+          
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm flex items-center gap-4">
+          <div class="flex-grow h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div id="progress-bar-fill" class="h-full bg-brand-600 transition-all duration-300 ease-out" style="width: 0%;"></div>
+          </div>
+          <span id="progress-text" class="text-xs font-bold text-slate-700 dark:text-slate-300">0/0 Dijawab</span>
+        </div>
+
+        <!-- Riwayat Skor Latihan -->
+        <div id="score-history-section" class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm mt-6 hidden">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Riwayat Skor Latihan</h3>
+          <div id="score-history-list" class="space-y-3">
+            <!-- Score history items will be rendered here -->
+            <p class="text-sm text-slate-500 dark:text-slate-400">Belum ada riwayat skor untuk himpunan ini.</p>
+          </div>
+          <button id="btn-clear-local-scores" onclick="clearLocalScores()" class="mt-4 w-full px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl transition hover:bg-rose-100 dark:hover:bg-rose-900/30">
+            <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Riwayat Lokal
+          </button>
+        </div>
+
+
+        <!-- Question Card -->
+        <div id="question-card" class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm space-y-8">
+          <!-- Teks Soal (Arabic) -->
+          <div id="exercise-question-text" class="arabic-text text-3xl sm:text-4xl text-right leading-loose min-h-[100px]">
+            <!-- Rendered question text here -->
+          </div>
+
+          <!-- Pilihan Jawaban -->
+          <div id="exercise-options" class="grid gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+            <!-- Rendered options here -->
+          </div>
+
+          <!-- Feedback Area -->
+          <div id="feedback-area" class="hidden mt-6 p-5 rounded-2xl border transition-all animate-[fadeIn_0.3s_ease-out_1]">
+            <div class="flex items-center gap-3 mb-2">
+              <i id="feedback-icon" class="text-xl"></i>
+              <h4 id="feedback-title" class="text-sm font-bold"></h4>
+            </div>
+            <p id="feedback-text" class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"></p>
+          </div>
+        </div>
+
+        <!-- Navigasi Soal (Placeholder) -->
+        <div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm">
+          <button id="btn-prev-q" onclick="previousQuestion()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm disabled:opacity-50 transition">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Soal Sebelumnya
+          </button>
+          <span id="question-counter" class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">Soal 0 dari 0</span>
+
+          <button id="btn-finish-exercise" onclick="submitExerciseResults()" class="hidden px-6 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-md transition animate-pulse">
+            Selesaikan & Kirim
+          </button>
+
+          <button id="btn-next-q" onclick="nextQuestion()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm disabled:opacity-50 transition">
+            Soal Berikutnya <i class="fa-solid fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- MODAL: CUSTOM ALERT (Reused from index.html) -->
+    <div id="custom-modal" onclick="if(event.target === this) closeModal()" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-[bounce_0.3s_ease-in-out_1]">
+        <div class="text-center" id="modal-body">
+          <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-3"></i>
+          <h3 class="text-base font-bold" id="modal-title">Operasi Sukses</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="modal-message">Pesan notifikasi.</p>
+        </div>
+        <button onclick="closeModal()" class="w-full mt-5 py-3 bg-slate-900 dark:bg-slate-850 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
+      </div>
+    </div>
+
+    <!-- MODAL: KAMUS PINTAR MEB (Reused from index.html) -->
+    <div id="dict-modal" onclick="if(event.target === this) hideDictModal()" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-3xl max-w-2xl w-full p-6 shadow-2xl border-t sm:border border-slate-100 dark:border-slate-800 space-y-5 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out_1]">
+        
+        <!-- Laci Drag Indicator -->
+        <div class="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto sm:hidden mb-2"></div>
+
+        <!-- Header Modal Kamus -->
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h3 class="text-xs sm:text-sm font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+            <i class="fa-solid fa-spell-check text-brand-600"></i> Kamus Pintar MEB
+          </h3>
+          <div class="flex items-center gap-2">
+            <span class="text-[9px] uppercase font-bold px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 animate-pulse" id="kamus-mode-tag">Mode Off</span>
+            <button onclick="hideDictModal()" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition p-1.5 rounded-lg hover:bg-slate-150 dark:hover:bg-slate-800">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Informasi Kata Terpilih -->
+        <div class="text-center bg-slate-50 dark:bg-slate-900/50 p-6 sm:p-8 rounded-[2.5rem] border border-slate-150 dark:border-slate-800/80">
+          <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider mb-2">Kata Terpilih</span>
+          <span class="text-5xl sm:text-6xl font-bold font-arabic text-brand-600 dark:text-brand-400 block leading-tight" id="dict-word-text">-</span>
+          <p id="dict-word-meaning-header" class="text-xl font-bold text-slate-900 dark:text-slate-100 mt-3 italic">-</p>
+        </div>
+
+        <!-- PANEL MODE A -->
+        <div id="dict-mode-a" class="hidden space-y-3">
+          <div class="bg-teal-50/50 dark:bg-teal-950/10 p-4 rounded-2xl border border-teal-100/50 dark:border-teal-900/20">
+            <span class="text-[9px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest block mb-3"><i class="fa-solid fa-bullseye"></i> Akar Kata Murni</span>
+            <div class="grid grid-cols-2 gap-4 divide-x divide-slate-150 dark:divide-slate-800">
+              <div class="text-center">
+                <span class="text-[9px] text-slate-400 block font-bold uppercase">Kata Induk</span>
+                <span class="text-2xl font-bold font-arabic text-slate-800 dark:text-white" id="modea-root">-</span>
+              </div>
+              <div class="text-center pl-2 flex flex-col justify-center">
+                <span class="text-[9px] text-slate-400 block font-bold uppercase mb-1">Arti Kata Dasar</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300" id="modea-root-meaning">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL MODE B -->
+        <div id="dict-mode-b" class="hidden space-y-4">
+          <div class="bg-indigo-50/50 dark:bg-indigo-950/10 p-4 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/20">
+            <span class="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block mb-4"><i class="fa-solid fa-diagram-project"></i> Dekonstruksi Imbuhan</span>
+            
+            <div id="dynamic-modeb-container" class="flex flex-row-reverse flex-wrap justify-center gap-3">
+              <!-- Elemen imbuhan/dasar dipasang secara dinamis via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Catatan Kustom & Tindakan Penyimpanan -->
+        <div class="space-y-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div>
+            <label class="block text-[9px] font-bold text-slate-400 uppercase mb-2">Catatan Arti Kustom Anda (Opsional)</label>
+            <input type="text" id="dict-custom-meaning" placeholder="Ganti atau tambahkan arti kustom..." class="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-1 focus:ring-brand-500 outline-none">
+          </div>
+          
+          <div class="flex gap-3">
+            <button onclick="hideDictModal()" class="w-1/3 border border-slate-200 dark:border-slate-750 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold py-3 rounded-xl transition">
+              Batal <!-- Ini juga harus memanggil hideDictModal() -->
+            </button>
+            <button onclick="saveWordToPersonalKamus()" id="btn-save-vocab" class="w-2/3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-850 dark:hover:bg-slate-800 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-slate-950/10">
+              <i class="fa-solid fa-bookmark text-[10px]"></i> Masukkan ke Kamus Leitner
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-[11px] text-slate-50">
+      <p>© 2026 Membaca Ekstensif Bertingkat (MEB). Admin Panel.</p>
+      <p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.6.0-alpha</p>
+    </footer>
+  </div>
+
+  <!-- ==========================================
+       LOGIKA JAVASCRIPT MODULAR
+       Urutan pemuatan: Error Handler -> Service Worker -> Modules -> Logic
+       ========================================== -->
+
+  <script>
+    // 1. Global Error Handler (Harus didefinisikan sebelum skrip eksternal dimuat)
+    window.handleScriptError = function(fileName) {
+      console.error(`Gagal memuat skrip: ${fileName}`);
+      alert(`Peringatan: Komponen ${fileName} gagal dimuat. Harap segarkan halaman.`);
+    };
+
+    // 2. Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker terdaftar', reg))
+          .catch(err => console.log('Pendaftaran SW gagal', err));
+      });
+    }
+  </script>
+
+  <!-- External Modules -->
+  <script src="shared/arabic_utils.js" type="module"></script>
+  <script src="js/user_api.js" onerror="handleScriptError('user_api.js')" type="module"></script>
+  <script src="js/user_ui.js" onerror="handleScriptError('user_ui.js')" type="module"></script>
+  <script src="js/user_app.js" onerror="handleScriptError('user_app.js')" type="module"></script>
+
+  <!-- Main Application Logic -->
+  <script type="module">
+    import { appState, loadMockData } from './js/user_app.js'; // Import loadMockData
+    import { switchView, showModal, closeModal, showSpinnerButton, toggleDarkMode, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, renderInteractiveArabicText, hideDictModal } from './js/user_ui.js'; // Import hideDictModal
+    import { apiCall, fetchExerciseData, fetchExerciseScoreHistory, pullSystemDataFromServer } from './js/user_api.js';
+
+
+
+    /**
+     * Global variable to store the dropdown element
+     */
+    let profileDropdown = null;
+
+    /**
+     * Function to toggle the profile dropdown in the header.
+     * @param {Event} event - The click event.
+     */
+    function toggleHeaderProfileDropdown(event) {
+      event.stopPropagation(); // Prevent click from immediately closing the dropdown
+      if (!profileDropdown) {
+        profileDropdown = document.getElementById('profile-dropdown');
+      }
+      profileDropdown.classList.toggle('hidden');
+
+      if (!profileDropdown.classList.contains('hidden')) {
+        // Add a click listener to the document to close the dropdown when clicking outside
+        document.addEventListener('click', closeHeaderProfileDropdown);
+      } else {
+        document.removeEventListener('click', closeHeaderProfileDropdown);
+      }
+    }
+
+    /**
+     * Function to close the profile dropdown.
+     */
+    function closeHeaderProfileDropdown() {
+      if (profileDropdown && !profileDropdown.classList.contains('hidden')) {
+        profileDropdown.classList.add('hidden');
+        document.removeEventListener('click', closeHeaderProfileDropdown);
+      }
+    }
+    /**
+     * Memulai sesi latihan dengan menarik data asli dari server
+     */
+    async function startExercise(setId) {
+      if (!setId) return;
+      appState.currentExerciseSetId = setId;
+      
+      // Sembunyikan pemilihan set, tampilkan area latihan
+      document.getElementById('set-selection-section').classList.add('hidden');
+      document.getElementById('score-history-section').classList.add('hidden'); // Sembunyikan riwayat saat memuat
+      document.getElementById('multiple-choice-exercise-section').classList.remove('hidden'); //
+      
+
+      try { //
+        showModal("Memuat Latihan", "Sedang mengambil soal dari database...", "fa-solid fa-spinner animate-spin text-brand-600");
+        const res = await fetchExerciseData(setId);
+        closeModal();
+        
+        if (res && (res.success || res.status === "success") && res.data) {
+          appState.exerciseQuestions = res.data;
+          appState.userAnswers = new Array(appState.exerciseQuestions.length).fill(null);
+          appState.currentQuestionIndex = 0;
+          setExerciseMode('read'); //
+
+          // Ambil riwayat skor setelah soal dimuat
+          if (appState.currentUser && !appState.isMockMode) { //
+            const historyRes = await fetchExerciseScoreHistory(appState.currentUser.userId, setId);
+            if (historyRes.success) {
+              renderScoreHistory(historyRes.data);
+            } else {
+              console.error("Failed to fetch score history:", historyRes.error);
+              renderScoreHistory([]); // Render empty history
+            }
+          } else if (appState.isMockMode) {
+            // Muat riwayat lokal untuk mode offline
+            const localScores = JSON.parse(localStorage.getItem('meb_local_scores') || '[]');
+            const setScores = localScores.filter(s => s.setId === setId);
+            renderScoreHistory(setScores);
+          } else {
+            renderScoreHistory([]); // Render empty history for no user
+          }
+          document.getElementById('score-history-section').classList.remove('hidden'); // Tampilkan bagian riwayat //
+        } else {
+          showModal("Gagal Memuat", res ? res.error : "Himpunan latihan tidak ditemukan.", "fa-solid fa-circle-xmark text-rose-500");
+          initMockExercise();
+        }
+      } catch (err) {
+        closeModal();
+        showModal("Masalah Koneksi", "Gagal menghubungi server. Menggunakan data simulasi.", "fa-solid fa-wifi text-amber-500");
+        initMockExercise();
+        renderScoreHistory([]); // Render empty history on error
+        document.getElementById('score-history-section').classList.remove('hidden'); // Tampilkan bagian riwayat bahkan saat error
+      }
+    }
+
+    /**
+     * Kembali ke menu pemilihan himpunan latihan tanpa refresh halaman
+     */
+    function backToSetSelection() {
+      // Sembunyikan area latihan, tampilkan pemilihan set
+      document.getElementById('multiple-choice-exercise-section').classList.add('hidden');
+      document.getElementById('set-selection-section').classList.remove('hidden');
+      document.getElementById('score-history-section').classList.add('hidden'); // Sembunyikan riwayat saat kembali
+      
+      // Reset state latihan di appState
+      appState.currentExerciseSetId = null;
+    }
+
+      /**
+     * Me-render daftar himpunan latihan yang tersedia
+     */
+    function renderExerciseSets() {
+      const grid = document.getElementById('exercise-sets-grid');
+      const badge = document.getElementById('set-count-badge');
+      if (!grid) return;
+      
+      grid.innerHTML = ''; //
+      const sets = appState.judulHimpunanLatihan || [];
+      badge.textContent = `${sets.length} Set`;
+
+      if (sets.length === 0) { //
+        grid.innerHTML = `
+          <div class="col-span-full py-8 text-center text-slate-400">
+            <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
+            <p class="text-xs">Tidak ada himpunan latihan tersedia.</p>
+          </div>`;
+        return;
+      }
+
+      sets.forEach(set => {
+        const card = document.createElement('div');
+        card.className = "p-4 rounded-2xl border border-slate-150 dark:border-slate-800 hover:border-brand-500 hover:shadow-md transition-all cursor-pointer group bg-slate-50/30 dark:bg-slate-800/20";
+        card.onclick = () => startExercise(set.ID_Himpunan_Latihan);
+        
+        card.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="bg-brand-100 dark:bg-brand-900/40 text-brand-600 p-2 rounded-xl group-hover:bg-brand-600 group-hover:text-white transition">
+              <i class="fa-solid fa-layer-group text-sm"></i>
+            </div>
+            <div class="flex-grow">
+              <h3 class="text-xs font-bold text-slate-900 dark:text-white mb-1">${set.Judul_Himpunan_Latihan}</h3>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">${set.Jumlah_Soal_Terdaftar || 0} Soal</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-brand-500 transition self-center"></i>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+       /**
+     * Me-render riwayat skor latihan user untuk himpunan aktif.
+     * @param {Array} historyData - Array objek riwayat skor.
+     */
+    function renderScoreHistory(historyData) {
+      const historyList = document.getElementById('score-history-list');
+      if (!historyList) return;
+      
+      historyList.innerHTML = ''; // Bersihkan riwayat sebelumnya
+
+      if (!historyData || historyData.length === 0) {
+        historyList.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400">Belum ada riwayat skor untuk himpunan ini.</p>';
+        return;
+      }
+
+      historyData.forEach((attempt, index) => {
+        const date = new Date(attempt.Tanggal_Mengerjakan);
+        const formattedDate = date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        
+        const item = document.createElement('div');
+        item.className = "flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700";
+        
+        const scoreColor = attempt.Score_Percentage >= 80 ? 'text-emerald-600' : (attempt.Score_Percentage >= 60 ? 'text-amber-600' : 'text-rose-600');
+
+        item.innerHTML = `
+          <div>
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Percobaan ${historyData.length - index}</span>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">${formattedDate}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold ${scoreColor}">${attempt.Score_Percentage}%</span>
+            <span class="text-[10px] text-slate-400">(${attempt.Total_Correct}/${attempt.Total_Questions})</span>
+          </div>
+        `;
+        historyList.appendChild(item);
+      });
+    }
+
+    /**
+     * Clears local exercise scores from localStorage.
+     */
+    function clearLocalScores() {
+      if (!appState.isMockMode) {
+        showModal("Aksi Dibatasi", "Fitur ini hanya berlaku untuk mode offline. Data Anda tersimpan di server.", "fa-solid fa-info-circle text-blue-500");
+        return;
+      }
+
+      if (confirm("Apakah Anda yakin ingin menghapus semua riwayat skor latihan lokal? Aksi ini tidak dapat dibatalkan.")) {
+        localStorage.removeItem('meb_local_scores');
+        renderScoreHistory([]); // Re-render to show empty history
+        showModal("Riwayat Dihapus", "Riwayat skor latihan lokal berhasil dihapus.", "fa-solid fa-trash-can text-rose-500");
+      }
+    }
+
+
+
+    function initMockExercise() { // Exported for external use
+      // Placeholder soal untuk demonstrasi Fase 2
+      appState.exerciseQuestions = [
+        {
+          ID_No_Soal: "QN-001",
+          Teks_Soal: "فِي غَابَةٍ صَغِيرَةٍ، كَانَ الأَسَدُ الحَكِيمُ يَحْمِي الحَيَوَانَاتِ. مَنْ هُوَ الحَكِيمُ؟",
+          Pilihan_A: "الأَسَدُ",
+          Pilihan_B: "الفِيلُ",
+          Pilihan_C: "الأَرْنَبُ",
+          Pilihan_D: "النَّمِرُ",
+          Jawaban_Benar: "A",
+          Feedback: "Benar, singa disebut sebagai yang bijaksana dalam teks tersebut."
+        },
+        {
+          ID_No_Soal: "QN-002",
+          Teks_Soal: "أَيْنَ كَانَ الأَسَدُ الحَكِيمُ؟",
+          Pilihan_A: "فِي المَدِينَةِ",
+          Pilihan_B: "فِي البَحْرِ",
+          Pilihan_C: "فِي الغَابَةِ الصَّغِيرَةِ",
+          Pilihan_D: "فِي الجَبَلِ",
+          Jawaban_Benar: "C",
+          Feedback: "Benar, teks menyebutkan singa berada di hutan kecil."
+        }
+      ];
+      appState.userAnswers = new Array(appState.exerciseQuestions.length).fill(null);
+      appState.currentQuestionIndex = 0;
+      setExerciseMode('read');
+    }
+
+    function setExerciseMode(mode) { // Exported for external use
+      appState.exerciseMode = mode;
+      const btnRead = document.getElementById('btn-mode-read');
+      const btnChallenge = document.getElementById('btn-mode-challenge');
+      if (mode === 'read') {
+        btnRead.className = "px-4 py-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-brand-600 shadow-sm transition";
+        btnChallenge.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition";
+      } else {
+        btnChallenge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-brand-600 shadow-sm transition";
+        btnRead.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition";
+      }
+      renderQuestion();
+    }
+
+    function renderQuestion() { // Exported for external use
+      if (!appState.exerciseQuestions || appState.exerciseQuestions.length === 0) return;
+      const data = appState.exerciseQuestions[appState.currentQuestionIndex];
+      appState.currentQuestionData = data;
+      const userAnswer = appState.userAnswers[appState.currentQuestionIndex];
+
+      document.getElementById('question-counter').textContent = `Soal ${appState.currentQuestionIndex + 1} dari ${appState.exerciseQuestions.length}`;
+      document.getElementById('btn-prev-q').disabled = appState.currentQuestionIndex === 0;
+      
+      const btnNext = document.getElementById('btn-next-q');
+      const btnFinish = document.getElementById('btn-finish-exercise');
+      const allAnswered = appState.userAnswers && appState.userAnswers.every(a => a !== null);
+      const isLastQuestion = appState.currentQuestionIndex === appState.exerciseQuestions.length - 1;
+      //
+      // Logika tampilan tombol Selesai vs Navigasi Berikutnya //
+      if (isLastQuestion && appState.exerciseMode === 'challenge') {
+        btnNext.classList.add('hidden');
+        btnFinish.classList.remove('hidden');
+
+        // Fitur Validasi: Hanya aktif jika semua soal telah dijawab
+        btnFinish.disabled = !allAnswered;
+        btnFinish.classList.toggle('opacity-50', !allAnswered);
+        btnFinish.classList.toggle('cursor-not-allowed', !allAnswered);
+        btnFinish.classList.toggle('animate-pulse', allAnswered);
+      } else {
+        btnNext.classList.remove('hidden');
+        btnFinish.classList.add('hidden');
+        btnNext.disabled = isLastQuestion;
+      }
+
+      // Update Progress Bar
+      const answeredCount = appState.userAnswers.filter(a => a !== null).length;
+      const totalQuestions = appState.exerciseQuestions.length;
+      const progressBarFill = document.getElementById('progress-bar-fill');
+      const progressText = document.getElementById('progress-text');
+      
+      const progressPercentage = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+      progressBarFill.style.width = `${progressPercentage}%`;
+      progressText.textContent = `${answeredCount}/${totalQuestions} Dijawab`;
+
+
+      
+      const questionContainer = document.getElementById('exercise-question-text');
+      if (appState.exerciseMode === 'read') { //
+        renderInteractiveArabicText(data.Teks_Soal, 'exercise-question-text'); //
+      } else {
+        questionContainer.innerHTML = `<div class="sentence-block pr-4 border-r-4 border-brand-500/10 text-right font-arabic" dir="rtl">${data.Teks_Soal}</div>`;
+        questionContainer.style.fontSize = `${appState.readerFontSize}px`;
+      }
+
+      // Feedback Area
+      const feedbackArea = document.getElementById('feedback-area');
+      if (appState.exerciseMode === 'challenge' && userAnswer) {
+        feedbackArea.classList.remove('hidden'); //
+        const isCorrect = userAnswer === data.Jawaban_Benar; //
+        feedbackArea.className = isCorrect 
+          ? "mt-6 p-5 rounded-2xl border border-emerald-100 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/30 animate-[fadeIn_0.3s_ease-out_1]"
+          : "mt-6 p-5 rounded-2xl border border-rose-100 bg-rose-50 dark:bg-rose-950/20 dark:border-rose-900/30 animate-[fadeIn_0.3s_ease-out_1]";
+        
+        document.getElementById('feedback-icon').className = isCorrect ? "fa-solid fa-circle-check text-emerald-600" : "fa-solid fa-circle-xmark text-rose-600";
+        document.getElementById('feedback-title').textContent = isCorrect ? "Jawaban Anda Benar!" : "Jawaban Kurang Tepat";
+        document.getElementById('feedback-title').className = isCorrect ? "text-sm font-bold text-emerald-800 dark:text-emerald-300" : "text-sm font-bold text-rose-800 dark:text-rose-300";
+        document.getElementById('feedback-text').textContent = data.Feedback || (isCorrect ? "Jawaban yang tepat." : `Jawaban yang benar adalah ${data.Jawaban_Benar}.`);
+      } else {
+        feedbackArea.classList.add('hidden');
+      }
+
+      const optionsContainer = document.getElementById('exercise-options');
+      optionsContainer.innerHTML = '';
+      ['A', 'B', 'C', 'D', 'E'].forEach(char => {
+        const optionText = data[`Pilihan_${char}`];
+        if (!optionText) return;
+        
+        const btn = document.createElement('div');
+        let btnClasses = "flex items-center gap-4 p-4 rounded-2xl border transition-all group ";
+        
+        const label = document.createElement('span');
+        let labelClasses = "w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition shrink-0 ";
+
+        // Styling berdasarkan apakah sudah dijawab
+        if (appState.exerciseMode === 'challenge' && userAnswer) {
+          if (char === data.Jawaban_Benar) {
+            btnClasses += "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800";
+            labelClasses += "bg-emerald-600 text-white";
+          } else if (char === userAnswer) {
+            btnClasses += "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800";
+            labelClasses += "bg-rose-600 text-white";
+          } else {
+            btnClasses += "border-slate-100 dark:border-slate-800 opacity-50 grayscale pointer-events-none";
+            labelClasses += "bg-slate-100 dark:bg-slate-800 text-slate-400";
+          }
+        } else {
+          btnClasses += "border-slate-150 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer";
+          labelClasses += "bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-brand-100 group-hover:text-brand-600";
+        }
+
+        btn.className = btnClasses;
+        label.className = labelClasses;
+        label.textContent = char;
+        
+        const content = document.createElement('div');
+        content.className = "flex-grow text-right overflow-hidden";
+        content.id = `option-container-${char}`;
+        
+        btn.appendChild(label);
+        btn.appendChild(content);
+        optionsContainer.appendChild(btn);
+        
+        if (appState.exerciseMode === 'read') {
+          renderInteractiveArabicText(optionText, content.id);
+        } else {
+          content.textContent = optionText;
+          content.className += " font-arabic text-xl text-slate-800 dark:text-slate-200";
+          if (!userAnswer) btn.onclick = () => handleAnswerSelection(char);
+        }
+      });
+    }
+    // Exported for external use
+    function handleAnswerSelection(char) {
+      if (appState.exerciseMode !== 'challenge' || appState.userAnswers[appState.currentQuestionIndex]) return;
+      appState.userAnswers[appState.currentQuestionIndex] = char;
+      renderQuestion();
+      
+      // Pindah otomatis ke soal berikutnya setelah jeda singkat jika bukan soal terakhir
+      if (appState.currentQuestionIndex < appState.exerciseQuestions.length - 1) {
+        setTimeout(() => {
+          nextQuestion();
+        }, 1200);
+      }
+    }
+
+    function nextQuestion() { // Exported for external use
+      if (appState.currentQuestionIndex < appState.exerciseQuestions.length - 1) {
+        appState.currentQuestionIndex++;
+        renderQuestion();
+      }
+    }
+
+    function previousQuestion() { // Exported for external use
+      if (appState.currentQuestionIndex > 0) {
+        appState.currentQuestionIndex--;
+        renderQuestion();
+      }
+    }
+
+    async function submitExerciseResults() {
+      if (!appState.currentUser) {
+        showModal("Gagal Mengirim", "Silakan login terlebih dahulu untuk menyimpan hasil latihan.", "fa-solid fa-circle-exclamation text-amber-500");
+        return;
+      }
+
+      // Cek apakah dalam mode Mock/Offline agar tidak muncul error koneksi
+      if (appState.isMockMode) {
+        const totalQuestions = appState.exerciseQuestions.length;
+        const totalCorrect = appState.exerciseQuestions.reduce((acc, q, idx) => {
+          return acc + (appState.userAnswers[idx] === q.Jawaban_Benar ? 1 : 0);
+        }, 0);
+        const scorePercentage = Math.round((totalCorrect / totalQuestions) * 100);
+
+        const newResult = {
+          setId: appState.currentExerciseSetId || 'MOCK-SET-001',
+          Total_Correct: totalCorrect,
+          Total_Questions: totalQuestions,
+          Score_Percentage: scorePercentage,
+          Tanggal_Mengerjakan: new Date().toISOString()
+        };
+
+        // Simpan permanen ke localStorage
+        let localScores = JSON.parse(localStorage.getItem('meb_local_scores') || '[]');
+        localScores.unshift(newResult); 
+        localStorage.setItem('meb_local_scores', JSON.stringify(localScores));
+
+        showModal("Latihan Selesai (Offline)", `Skor Anda: ${scorePercentage}% Benar. Hasil disimpan permanen di browser ini.`, "fa-solid fa-circle-check text-emerald-500");
+        setTimeout(() => backToSetSelection(), 3000);
+        return;
+      }
+
+      const payload = {
+        action: 'saveExerciseResults',
+        userId: appState.currentUser.userId,
+        setId: appState.currentExerciseSetId || 'MOCK-SET-001',
+        results: appState.exerciseQuestions.map((q, idx) => ({
+          questionId: q.ID_No_Soal,
+          userAnswer: appState.userAnswers[idx],
+          isCorrect: appState.userAnswers[idx] === q.Jawaban_Benar
+        }))
+      };
+
+      showSpinnerButton('btn-finish-exercise', true);
+      try {
+        const res = await apiCall(payload);
+        if (res.success || res.status === "success") {
+          showModal("Latihan Selesai!", `Skor Anda: ${res.score}% Benar. Hasil telah berhasil disimpan ke database.`, "fa-solid fa-award text-emerald-500");
+        } else {
+          showModal("Gagal Menyimpan", res.error || "Terjadi kesalahan pada server.", "fa-solid fa-circle-xmark text-rose-500");
+        }
+      } catch (err) {
+        showModal("Koneksi Bermasalah", "Gagal menghubungi server. Hasil disimpan secara lokal di sesi ini.", "fa-solid fa-wifi text-amber-500");
+      } finally {
+        showSpinnerButton('btn-finish-exercise', false, "Selesai & Kirim");
+      }
+    }
+
+    function setupSwipeSupport() {
+      let touchstartX = 0;
+      let touchendX = 0;
+      const swipeThreshold = 50;
+      const questionCard = document.getElementById('question-card');
+      questionCard.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
+      questionCard.addEventListener('touchend', e => {
+        touchendX = e.changedTouches[0].screenX;
+        if (touchendX < touchstartX - swipeThreshold) nextQuestion();
+        if (touchendX > touchstartX + swipeThreshold) previousQuestion();
+      }, {passive: true});
+    }
+
+    // Ekspos fungsi ke scope global agar bisa dipanggil dari HTML onclick
+    window.toggleDarkMode = toggleDarkMode;
+    window.startExercise = startExercise;
+    window.backToSetSelection = backToSetSelection;
+    window.setExerciseMode = setExerciseMode;
+    window.previousQuestion = previousQuestion;
+    window.nextQuestion = nextQuestion;
+    window.submitExerciseResults = submitExerciseResults;
+    window.handleAnswerSelection = handleAnswerSelection;
+
+    window.toggleHeaderProfileDropdown = toggleHeaderProfileDropdown; // Expose to global scope
+    window.clearLocalScores = clearLocalScores; // Expose to global scope
+    window.addEventListener('load', async () => {
+      // 1. Sinkronisasi Sesi User dari Local Storage (Mengikuti index.html)
+      if (!appState.currentUser) {
+        showModal("Akses Dibatasi", "Silakan login terlebih dahulu untuk mengakses fitur latihan.", "fa-solid fa-user-lock text-amber-500");
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return;
+      } else {
+        // Sinkronisasi Nama & Avatar di Header
+        const avatarEl = document.getElementById('header-avatar');
+        const nameEl = document.getElementById('header-name');
+        if (avatarEl) avatarEl.textContent = appState.currentUser.username.substring(0,2).toUpperCase();
+        if (nameEl) nameEl.textContent = appState.currentUser.username;
+      }
+
+      // 2. Inisialisasi Data berdasarkan status koneksi
+      if (appState.isMockMode) {
+        // Sediakan set latihan dummy jika offline agar UI tidak kosong
+        await loadMockData(false); // Memuat semua data mock, termasuk petaKosakata dan kataInduk
+        appState.judulHimpunanLatihan = [
+          { ID_Himpunan_Latihan: 'MOCK-SET-001', Judul_Himpunan_Latihan: 'Latihan Contoh (Offline Mode)', Jumlah_Soal_Terdaftar: 2 }
+        ];
+      } else {
+        await pullSystemDataFromServer();
+      }
+
+      renderExerciseSets();
+      setupSwipeSupport();
+    });
+  </script>
+
+</body>
+</html>

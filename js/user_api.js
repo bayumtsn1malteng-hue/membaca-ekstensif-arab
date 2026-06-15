@@ -6,6 +6,8 @@
  * dengan Google Apps Script Web App.
  */
 
+import { appState } from './user_app.js';
+import { renderLibrary, updateDashboardStats, renderKamusTable } from './user_ui.js';
 /**
  * Melakukan pemanggilan POST API secara aman dengan metode CORS dan retries + exponential backoff
  * @param {Object} payload - Objek data payload yang akan dikirim
@@ -13,7 +15,7 @@
  * @param {number} delay - Waktu tunda awal (ms) sebelum mencoba kembali
  * @returns {Promise<Object>} Respons JSON dari server
  */
-async function apiCall(payload, retries = 5, delay = 1000) {
+export async function apiCall(payload, retries = 5, delay = 1000) {
   if (!appState.gasEndpoint) throw new Error("Endpoint API belum siap.");
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -37,7 +39,7 @@ async function apiCall(payload, retries = 5, delay = 1000) {
 /**
  * Menarik data teks bacaan sistem terkini dari Spreadsheet Server
  */
-async function pullSystemDataFromServer() {
+export async function pullSystemDataFromServer() {
   if (appState.isMockMode || !appState.gasEndpoint) return;
   try {
     const btn = document.getElementById('btn-sync-manual');
@@ -50,6 +52,8 @@ async function pullSystemDataFromServer() {
       appState.petaKosakata = res.data.peta_kosakata || [];
       appState.kataInduk = res.data.kata_induk || [];
       appState.sambungan = res.data.sambungan || [];
+      appState.judulHimpunanLatihan = res.data.judul_himpunan_latihan || [];
+      
       renderLibrary();
       updateDashboardStats();
     }
@@ -62,9 +66,49 @@ async function pullSystemDataFromServer() {
 }
 
 /**
+ * Menarik data soal latihan tertentu dari Spreadsheet Server berdasarkan ID Himpunan
+ * @param {string} setId - ID Himpunan Latihan (ID_Himpunan_Latihan)
+ * @returns {Promise<Object>} Respons data soal dari server
+ */
+export async function fetchExerciseData(setId) {
+  if (appState.isMockMode || !appState.gasEndpoint) return null;
+  try {
+    const res = await apiCall({
+      action: "getLatihanQuestions",
+      setId: setId
+    });
+    return res;
+  } catch (err) {
+    console.error("Gagal menarik data latihan: ", err);
+    throw err;
+  }
+}
+
+/**
+ * Menarik riwayat skor latihan user untuk himpunan tertentu dari Spreadsheet Server.
+ * @param {string} userId - ID User.
+ * @param {string} setId - ID Himpunan Latihan.
+ * @returns {Promise<Object>} Respons data riwayat skor dari server.
+ */
+export async function fetchExerciseScoreHistory(userId, setId) {
+  if (appState.isMockMode || !appState.gasEndpoint || !userId || !setId) return null;
+  try {
+    const res = await apiCall({
+      action: "getExerciseScoreHistory",
+      userId: userId,
+      setId: setId
+    });
+    return res;
+  } catch (err) {
+    console.error("Gagal menarik riwayat skor latihan: ", err);
+    throw err;
+  }
+}
+
+/**
  * Menarik data kamus pribadi user terkini dari Spreadsheet Server
  */
-async function pullUserKamusFromServer() {
+export async function pullUserKamusFromServer() {
   if (appState.isMockMode || !appState.gasEndpoint || !appState.currentUser) return;
   try {
     const res = await apiCall({

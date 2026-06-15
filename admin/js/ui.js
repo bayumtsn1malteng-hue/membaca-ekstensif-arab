@@ -57,6 +57,10 @@ function renderLiveArabicFeedback() {
     const cleaned = cleanArabicDiacritics(word);
     const vocabMatch = dbPetaKosakata.find(v => cleanArabicDiacritics(v.Kata_Teks_Polos) === cleaned);
     const directIndukMatch = dbKataInduk.find(i => cleanArabicDiacritics(i.Kata_Induk_Polos) === cleaned);
+    // Menggunakan normalizeArabic sesuai saran laporan evaluasi untuk konsistensi relasi data
+    const cleaned = normalizeArabic(word);
+    const vocabMatch = dbPetaKosakata.find(v => normalizeArabic(v.Kata_Teks_Polos) === cleaned);
+    const directIndukMatch = dbKataInduk.find(i => normalizeArabic(i.Kata_Induk_Polos) === cleaned);
     
     let textColorClass = "text-slate-900 bg-white border border-slate-200 hover:bg-slate-100"; 
     let titleTooltip = "Belum terpetakan (Kosakata Baru)";

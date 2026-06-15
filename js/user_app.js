@@ -13,20 +13,26 @@
  * - Konfigurasi backend API (saveApiEndpoint, testApiConnection)
  *
  * DEPENDENSI (harus dimuat sebelum modul ini):
- *   1. shared/arabic_utils.js  → cleanArabicHarakat, normalizeArabic
+ *   1. shared/arabic_utils.js  → cleanArabicHarakat, normalizeArabic, getVocalizedWord (moved from here)
  *   2. js/user_api.js          → apiCall, pullSystemDataFromServer, pullUserKamusFromServer
  *   3. js/user_ui.js           → switchView, renderLibrary, updateDashboardStats, dll.
- */
+ */ // Removed getVocalizedWord from here, as it's now in user_ui.js
+
+import { apiCall, pullSystemDataFromServer, pullUserKamusFromServer, fetchExerciseData, fetchExerciseScoreHistory } from './user_api.js';
+import { switchView, renderLibrary, updateDashboardStats, setupUserInterface, showModal, showSpinnerButton, toggleDarkMode, renderKamusTable, loadReader, showDictModal, hideDictModal, buildDynamicModeBLayout, loadLeitnerCard, revealLeitnerCard, closeLeitnerSession, filterKamusByBox, toggleAuthMode, filterLibrary, searchLibrary, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, closeModal } from './user_ui.js';
+import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
+// Import modul lain jika sudah dipisah (Contoh: import { setupUserInterface } from './user_ui.js';)
 
 // ============================================================
 // 0. STATE UTAMA APLIKASI
 // ============================================================
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'meb-ext-reader';
+const isModule = true;
 
 let appState = {
   gasEndpoint: localStorage.getItem('meb_gas_endpoint') || '',
-  isMockMode: true,
-  currentUser: null,
+  isMockMode: !localStorage.getItem('meb_gas_endpoint'), // Initialize based on whether an endpoint is saved
+  currentUser: JSON.parse(localStorage.getItem('meb_user')) || null,
   pustaka: [],
   petaKosakata: [],
   kataInduk: [],
@@ -34,13 +40,77 @@ let appState = {
   kamusUser: [],
   currentReadingText: null,
   activeWordSelected: null,
+  isAuthRegister: false,
   selectedBoxFilter: 'semua',
   readerFontSize: Number(localStorage.getItem('meb_reader_font_size') || 36),
   readerLineHeight: Number(localStorage.getItem('meb_reader_line_height') || 3.2),
   leitnerSessionWords: [],
   leitnerSessionIndex: 0,
-  leitnerReviewResults: [] // Array to store results for bulk submission
+  leitnerReviewResults: [], // Array to store results for bulk submission
+  exerciseScoreHistory: [], // Riwayat skor latihan untuk himpunan aktif
+  // --- Ekstensi Fitur Latihan Soal ---
+  currentExerciseType: 'multiple_choice', // Jenis latihan aktif
+  currentExerciseSetId: null,             // ID Himpunan Latihan (ID_Himpunan_Latihan)
+  currentQuestionIndex: 0,                // Indeks soal saat ini dalam himpunan
+  judulHimpunanLatihan: [],               // Daftar metadata himpunan latihan
+  currentQuestionData: null,              // Objek data soal yang sedang aktif
+  exerciseMode: 'read',                   // Mode aktif: 'read' (eksplorasi) atau 'challenge' (jawab)
+  exerciseQuestions: [],                  // Array berisi seluruh soal dalam satu himpunan
+  userAnswers: []                         // Rekaman jawaban pengguna di Mode Tantangan
 };
+
+// Proxy debugging untuk memantau perubahan appState di Console
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+  appState = new Proxy(appState, {
+    set(target, key, value) {
+      console.log(`%c[STATE] %c${key}:`, 'color: #14b8a6; font-weight: bold', 'color: #64748b', value);
+      target[key] = value;
+      return true;
+    }
+  });
+}
+
+// Ekspos ke window untuk debugging console dan kompatibilitas onclick di HTML
+window.appState = appState;
+
+// Fungsi-fungsi dari user_app.js yang dipanggil langsung dari HTML
+window.logout = logout;
+window.handleAuthSubmit = handleAuthSubmit;
+window.bypassLogin = bypassLogin;
+window.handleAvatarClick = handleAvatarClick;
+window.loadMockData = loadMockData;
+window.handleWordClick = handleWordClick;
+window.markReadAsFinished = markReadAsFinished;
+window.saveWordToPersonalKamus = saveWordToPersonalKamus;
+window.deleteKamusWord = deleteKamusWord; // Ini sudah benar
+window.hideDictModal = hideDictModal; // Ekspos fungsi baru untuk menyembunyikan modal
+window.saveApiEndpoint = saveApiEndpoint;
+window.testApiConnection = testApiConnection;
+
+// Fungsi-fungsi dari user_ui.js yang dipanggil langsung dari HTML
+window.switchView = switchView;
+window.toggleAuthMode = toggleAuthMode;
+window.filterLibrary = filterLibrary;
+window.searchLibrary = searchLibrary;
+window.adjustReaderFont = adjustReaderFont;
+window.resetReaderSettings = resetReaderSettings;
+window.adjustReaderLineHeight = adjustReaderLineHeight;
+window.toggleTranslation = toggleTranslation;
+window.filterKamusByBox = filterKamusByBox;
+window.closeModal = closeModal; // Ini untuk modal umum, bukan modal kamus
+window.closeLeitnerSession = closeLeitnerSession;
+window.revealLeitnerCard = revealLeitnerCard;
+window.startLeitnerSession = startLeitnerSession; // Jika ada tombol di index.html
+window.submitLeitnerResult = submitLeitnerResult; // Jika ada tombol di index.html
+window.pullSystemDataFromServer = pullSystemDataFromServer;
+window.pullUserKamusFromServer = pullUserKamusFromServer;
+
+// Export appState for other modules to import
+export { appState };
+
+// Export functions that are still called directly from HTML onclick attributes (for other modules to import)
+// (This is a temporary bridge until all onclicks are replaced with addEventListener in main.js)
+export { logout, handleAuthSubmit, bypassLogin, handleAvatarClick, loadMockData, handleWordClick, markReadAsFinished, saveWordToPersonalKamus, deleteKamusWord, startLeitnerSession, submitLeitnerResult, nextLeitnerCard, saveApiEndpoint, testApiConnection };
 
 // ============================================================
 // 1. DATABASE MOCK (FALLBACK OFFLINE)
@@ -88,85 +158,8 @@ const MOCK_SAMBUNGAN = [
 ];
 
 // ============================================================
-// 2. INISIALISASI HALAMAN (window.onload)
-// ============================================================
-window.onload = async function() {
-  // Periksa preferensi mode gelap
-  if (localStorage.getItem('dark_mode') === 'true' ||
-      (!('dark_mode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-    const sidebarIcon = document.getElementById('theme-icon-sidebar');
-    const mobileIcon = document.getElementById('theme-icon-mobile');
-    if (sidebarIcon) sidebarIcon.className = 'fa-solid fa-sun';
-    if (mobileIcon) mobileIcon.className = 'fa-solid fa-sun';
-  }
-
-  // Periksa simpanan Endpoint API
-  const savedEndpoint = localStorage.getItem('meb_gas_endpoint');
-  if (savedEndpoint) {
-    appState.gasEndpoint = savedEndpoint;
-    appState.isMockMode = false;
-    document.getElementById('api-endpoint-url').value = savedEndpoint;
-    document.getElementById('connection-status-tag').textContent = "Sinkron Server Aktif";
-    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 uppercase tracking-wide";
-    document.getElementById('btn-sync-manual').classList.remove('hidden');
-  } else {
-    appState.isMockMode = true;
-    document.getElementById('connection-status-tag').textContent = "Mock Data (Offline Mode)";
-    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 uppercase tracking-wide";
-    document.getElementById('btn-sync-manual').classList.add('hidden');
-  }
-
-  // Muat Data Pustaka Terlebih Dahulu
-  await loadMockData(false);
-
-  // Verifikasi login lokal pengguna
-  const savedUser = localStorage.getItem('meb_user');
-  if (savedUser) {
-    appState.currentUser = JSON.parse(savedUser);
-    setupUserInterface();
-
-    if (!appState.isMockMode) {
-      await pullSystemDataFromServer();
-      await pullUserKamusFromServer();
-    } else {
-      const localKamus = localStorage.getItem('meb_local_kamus');
-      if (localKamus) {
-        appState.kamusUser = JSON.parse(localKamus);
-      }
-    }
-    updateDashboardStats();
-    switchView('library');
-  } else {
-    switchView('login');
-  }
-};
-
-// ============================================================
 // 3. MANAJEMEN OTENTIKASI USER
 // ============================================================
-let isAuthRegister = false;
-
-/**
- * Mengubah tipe otentikasi login / register
- * @param {boolean} isRegister - True jika mendaftar baru
- */
-function toggleAuthMode(isRegister) {
-  isAuthRegister = isRegister;
-  const title = document.getElementById('auth-title');
-  const btn = document.getElementById('auth-submit-btn');
-  const toggleText = document.getElementById('auth-toggle-text');
-
-  if (isRegister) {
-    title.textContent = "Daftar Akun Baru";
-    btn.textContent = "Daftar Sekarang";
-    toggleText.innerHTML = `Sudah punya akun? <a href="#" onclick="toggleAuthMode(false)" class="text-brand-600 dark:text-brand-400 font-bold hover:underline">Masuk</a>`;
-  } else {
-    title.textContent = "Masuk ke MEB Reader";
-    btn.textContent = "Masuk Sekarang";
-    toggleText.innerHTML = `Belum punya akun? <a href="#" onclick="toggleAuthMode(true)" class="text-brand-600 dark:text-brand-400 font-bold hover:underline">Daftar Baru</a>`;
-  }
-}
 
 /**
  * Menangani submit form login / registrasi
@@ -184,7 +177,7 @@ async function handleAuthSubmit(event) {
   if (appState.isMockMode) {
     // Mode Demo Offline
     setTimeout(() => {
-      showSpinnerButton('auth-submit-btn', false, isAuthRegister ? "Daftar Sekarang" : "Masuk Sekarang");
+      showSpinnerButton('auth-submit-btn', false, appState.isAuthRegister ? "Daftar Sekarang" : "Masuk Sekarang");
       const mockUser = {
         userId: "USR-MOCK-999",
         username: userVal,
@@ -200,12 +193,12 @@ async function handleAuthSubmit(event) {
   } else {
     // Mode Hubungan Server Riil
     try {
-      const action = isAuthRegister ? "registerUser" : "loginUser";
+      const action = appState.isAuthRegister ? "registerUser" : "loginUser";
       const res = await apiCall({
         action: action,
         username: userVal,
         password: passVal
-      });
+      }, 5, 1000); // Pass retries and delay
 
       if (res.success || res.userId) {
         const userObj = {
@@ -226,7 +219,7 @@ async function handleAuthSubmit(event) {
     } catch (err) {
       showModal("Kesalahan Koneksi", "Gagal menghubungi Apps Script Anda: " + err.toString(), "fa-solid fa-triangle-exclamation text-amber-500");
     } finally {
-      showSpinnerButton('auth-submit-btn', false, isAuthRegister ? "Daftar Sekarang" : "Masuk Sekarang");
+      showSpinnerButton('auth-submit-btn', false, appState.isAuthRegister ? "Daftar Sekarang" : "Masuk Sekarang");
     }
   }
 }
@@ -303,30 +296,6 @@ async function loadMockData(clear) {
   }
   renderLibrary();
   updateDashboardStats();
-}
-
-/**
- * Mengambil bentuk berharakat sebuah item kamus dari data induk
- * @param {Object} item - Item kosakata dari kamusUser
- * @returns {string} Bentuk berharakat / vocalized dari kata
- */
-function getVocalizedWord(item) {
-  if (!item) return "-";
-
-  // Ambil relasi dari ID_Kata_Induk terlebih dahulu
-  if (item.ID_Kata_Induk && item.ID_Kata_Induk !== "IND-NASKAH") {
-    const parent = appState.kataInduk.find(ki => ki.ID_Kata_Induk === item.ID_Kata_Induk);
-    if (parent) return parent.Kata_Induk;
-  }
-
-  // Ambil dari Peta Kosakata untuk harakat lengkap
-  const mapping = appState.petaKosakata.find(m => {
-    return normalizeArabic(m.Kata_Teks_Polos) === normalizeArabic(item.Kata_Polos) ||
-           normalizeArabic(m.Kata_Teks) === normalizeArabic(item.Kata_Polos);
-  });
-  if (mapping) return mapping.Kata_Teks;
-
-  return item.Kata_Polos;
 }
 
 // ============================================================
@@ -428,7 +397,7 @@ function handleWordClick(arabicWordWithHarakat) {
     appState.activeWordSelected.idKataInduk = "";
   }
 
-  document.getElementById('dict-modal').classList.remove('hidden');
+  showDictModal(); // Ini akan menampilkan modal
 }
 
 // ============================================================
@@ -510,7 +479,7 @@ async function saveWordToPersonalKamus() {
       loadReader(appState.currentReadingText.ID_Teks);
     }
 
-    closeDictModal();
+    hideDictModal(); // Sembunyikan modal setelah menyimpan
     showModal("Berhasil Menyimpan", `"${appState.activeWordSelected.withHarakat}" dimasukkan ke Box 1 Kamus Leitner Anda.`, "fa-solid fa-folder-plus text-teal-600");
   } else {
     try {
@@ -542,7 +511,7 @@ async function saveWordToPersonalKamus() {
           loadReader(appState.currentReadingText.ID_Teks);
         }
 
-        closeDictModal();
+        hideDictModal(); // Sembunyikan modal setelah menyimpan
         showModal("Sinkronisasi Sukses", "Kata tersimpan ke Google Sheets & siap dipelajari.", "fa-solid fa-cloud-arrow-up text-brand-600");
       } else {
         showModal("Gagal Menyimpan", res.error, "fa-solid fa-circle-xmark text-red-500");
@@ -616,7 +585,7 @@ async function submitLeitnerResult(isCorrect) {
       const reviewIntervals = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16, 'Known': 30 }; // Days for review intervals
       const nextReviewDays = reviewIntervals[current.Status_Belajar] || 1; // Default to 1 day if not found
       current.Tanggal_Review_Berikutnya = new Date(Date.now() + nextReviewDays * 24 * 60 * 60 * 1000).toISOString();
-    }
+    } //
     localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
     nextLeitnerCard();
   } else {
@@ -663,7 +632,7 @@ async function nextLeitnerCard() { // Made async to await apiCall
     loadLeitnerCard();
   } else {
     // Panggil penutup sesi yang akan menangani sinkronisasi terakhir secara otomatis
-    await closeLeitnerSession(); 
+    await closeLeitnerSession();
 
     updateDashboardStats();
     if (appState.currentReadingText) {
@@ -686,17 +655,18 @@ function saveApiEndpoint() {
     appState.isMockMode = true;
     localStorage.removeItem('meb_gas_endpoint');
     document.getElementById('connection-status-tag').textContent = "Mock Data (Offline Mode)";
-    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 uppercase tracking-wide";
-    document.getElementById('btn-sync-manual').classList.add('hidden');
-    showModal("Mode Offline Diaktifkan", "Endpoint kosong, sistem kembali menggunakan simulasi database browser.", "fa-solid fa-circle-info text-slate-500");
-  } else if (url.startsWith("https://script.google.com/")) {
+    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 uppercase tracking-wide"; //
+    document.getElementById('btn-sync-manual').classList.add('hidden'); //
+    userUi.showModal("Mode Offline Diaktifkan", "Endpoint kosong, sistem kembali menggunakan simulasi database browser.", "fa-solid fa-circle-info text-slate-500");
+  } else if (url.startsWith("https://script.google.com/macros/s/")) { // Lebih spesifik untuk URL Apps Script
     appState.gasEndpoint = url;
     appState.isMockMode = false;
     localStorage.setItem('meb_gas_endpoint', url);
     document.getElementById('connection-status-tag').textContent = "Sinkron Server Aktif";
-    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 uppercase tracking-wide";
-    document.getElementById('btn-sync-manual').classList.remove('hidden');
+    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 uppercase tracking-wide"; //
+    document.getElementById('btn-sync-manual').classList.remove('hidden'); //
 
+    // These functions are in user_api.js, so they need to be imported and then called.
     pullSystemDataFromServer();
     pullUserKamusFromServer();
 
@@ -718,7 +688,7 @@ async function testApiConnection() {
   showModal("Menguji Koneksi", "Menghubungi web app Google Sheets...", "fa-solid fa-circle-notch animate-spin text-brand-600");
 
   try {
-    const response = await fetch(`${appState.gasEndpoint}?action=initDatabase`);
+    const response = await fetch(`${appState.gasEndpoint}?action=initDatabase`); //
     const data = await response.json();
 
     closeModal();

@@ -5,6 +5,9 @@
  * * Modul ini menangani seluruh rendering visual, manipulasi DOM,
  * pergantian screen (routing), pengaturan font/line-height, dan dialog modal.
  */
+import { appState, handleWordClick } from './user_app.js'; // Import appState and handleWordClick
+import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
+
 
 // --- GRADASI WARNA ADAPTIF LEITNER BOX ---
 const LEITNER_THEME = {
@@ -45,6 +48,7 @@ const LEITNER_THEME = {
     hover: "hover:bg-emerald-100/60 dark:hover:bg-emerald-900/20"
   }
 };
+
 
 /**
  * Berpindah tampilan (view/screen) pada aplikasi pembaca
@@ -111,11 +115,11 @@ function switchView(viewName) {
 }
 
 /**
- * Mengubah tipe otentikasi login / register
+ * Mengubah tipe otentikasi login / register (exposed globally via user_app.js)
  * @param {boolean} isRegister - True jika mendaftar baru
  */
 function toggleAuthMode(isRegister) {
-  isAuthRegister = isRegister;
+  appState.isAuthRegister = isRegister;
   const title = document.getElementById('auth-title');
   const btn = document.getElementById('auth-submit-btn');
   const toggleText = document.getElementById('auth-toggle-text');
@@ -155,6 +159,7 @@ function setupUserInterface() {
  */
 function renderLibrary(filterDifficulty = 'semua') {
   const grid = document.getElementById('library-grid');
+  if (!grid) return;
   grid.innerHTML = '';
 
   let list = appState.pustaka;
@@ -253,7 +258,7 @@ function renderLibrary(filterDifficulty = 'semua') {
 }
 
 /**
- * Memfilter tampilan buku berdasarkan tombol kesulitan
+ * Memfilter tampilan buku berdasarkan tombol kesulitan (exposed globally via user_app.js)
  */
 function filterLibrary(difficulty) {
   document.querySelectorAll('#difficulty-filters button').forEach(btn => {
@@ -264,7 +269,7 @@ function filterLibrary(difficulty) {
 }
 
 /**
- * Mencari buku di library secara real-time
+ * Mencari buku di library secara real-time (exposed globally via user_app.js)
  */
 function searchLibrary() {
   const q = document.getElementById('library-search').value.toLowerCase();
@@ -303,25 +308,37 @@ function loadReader(idTeks) {
   document.getElementById('reader-title-ar').textContent = text.Judul_Teks_Arab;
   document.getElementById('reader-translation').textContent = text.Terjemah_Indonesia;
 
-  const canvas = document.getElementById('reader-canvas');
-  canvas.innerHTML = '';
-  canvas.style.fontSize = `${appState.readerFontSize}px`;
-
+  renderInteractiveArabicText(text.Konten_Arab || "", 'reader-canvas');
+  
   // Sinkronkan Slider UI dengan State Terkini
   const slider = document.getElementById('line-height-slider');
   if (slider) slider.value = appState.readerLineHeight;
   const sliderV = document.getElementById('line-height-slider-v');
   if (sliderV) sliderV.value = appState.readerLineHeight;
 
-  const content = text.Konten_Arab || "";
-  const rawSentences = content.split(/[.\n]+/);
+  switchView('reader');
+}
+
+/**
+ * Merender teks Arab interaktif ke dalam container tertentu (seperti E-Reader)
+ * @param {string} text - Teks Arab mentah
+ * @param {string} containerId - ID elemen target
+ */
+function renderInteractiveArabicText(text, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  container.innerHTML = '';
+  container.style.fontSize = `${appState.readerFontSize}px`;
+  
+  const rawSentences = text.split(/[.\n]+/);
   
   rawSentences.forEach((rawSentence) => {
     const trimmedSentence = rawSentence.trim();
     if (trimmedSentence.length === 0) return;
 
     const sentenceBlock = document.createElement('div');
-    sentenceBlock.className = "sentence-block mb-8 pb-4 pr-4 border-r-4 border-brand-500/20 text-right transition-all duration-150";
+    sentenceBlock.className = "sentence-block mb-6 pb-2 pr-4 border-r-4 border-brand-500/10 text-right transition-all duration-150";
     sentenceBlock.style.lineHeight = appState.readerLineHeight;
     sentenceBlock.dir = "rtl";
 
@@ -383,14 +400,12 @@ function loadReader(idTeks) {
     periodSpan.className = "text-brand-600/30 dark:text-brand-400/30 font-bold select-none pr-1";
     sentenceBlock.appendChild(periodSpan);
 
-    canvas.appendChild(sentenceBlock);
+    container.appendChild(sentenceBlock);
   });
-
-  switchView('reader');
 }
 
 /**
- * Mengatur ukuran font pada reader canvas secara interaktif
+ * Mengatur ukuran font pada reader canvas secara interaktif (exposed globally via user_app.js)
  * @param {number} dir - Arah perubahan (-1 untuk perkecil, 1 untuk perbesar)
  */
 function adjustReaderFont(dir) {
@@ -410,17 +425,20 @@ function adjustReaderFont(dir) {
   const sliderV = document.getElementById('line-height-slider-v');
   if (sliderV) sliderV.value = appState.readerLineHeight;
 
-  const canvas = document.getElementById('reader-canvas');
-  if (canvas) {
-    canvas.style.fontSize = `${appState.readerFontSize}px`;
-    // Terapkan perubahan spasi ke seluruh blok teks yang sudah ada
-    const blocks = document.querySelectorAll('.sentence-block');
-    blocks.forEach(block => block.style.lineHeight = appState.readerLineHeight);
-  }
+  // Terapkan ke elemen canvas atau question text jika ada
+  const selectors = ['#reader-canvas', '#exercise-question-text'];
+  selectors.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) {
+      el.style.fontSize = `${appState.readerFontSize}px`;
+      const blocks = el.querySelectorAll('.sentence-block');
+      blocks.forEach(block => block.style.lineHeight = appState.readerLineHeight);
+    }
+  });
 }
 
 /**
- * Mengatur ketinggian baris (line-height) secara interaktif via slider
+ * Mengatur ketinggian baris (line-height) secara interaktif via slider (exposed globally via user_app.js)
  * @param {number} val - Nilai multiplier spasi baris
  */
 function adjustReaderLineHeight(val) {
@@ -440,7 +458,7 @@ function adjustReaderLineHeight(val) {
 }
 
 /**
- * Mengembalikan pengaturan font dan spasi ke nilai standar
+ * Mengembalikan pengaturan font dan spasi ke nilai standar (exposed globally via user_app.js)
  */
 function resetReaderSettings() {
   appState.readerFontSize = 36;
@@ -463,7 +481,7 @@ function resetReaderSettings() {
 }
 
 /**
- * Menutup dialog modal sistem kustom
+ * Menutup dialog modal sistem kustom (exposed globally via user_app.js)
  */
 function closeModal() {
   document.getElementById('custom-modal').classList.add('hidden');
@@ -611,7 +629,7 @@ function renderKamusTable(boxFilter = 'semua') {
 }
 
 /**
- * Filter tabel kamus berdasarkan nomor Box
+ * Filter tabel kamus berdasarkan nomor Box (exposed globally via user_app.js)
  */
 function filterKamusByBox(boxNo) {
   renderKamusTable(boxNo);
@@ -619,7 +637,7 @@ function filterKamusByBox(boxNo) {
 
 /**
  * Memuat kartu flashcard Leitner yang aktif saat sesi ujian
- */
+ */ // (exposed globally via user_app.js)
 function loadLeitnerCard() {
   const word = appState.leitnerSessionWords[appState.leitnerSessionIndex];
   const countText = `${appState.leitnerSessionIndex + 1} / ${appState.leitnerSessionWords.length}`;
@@ -634,7 +652,7 @@ function loadLeitnerCard() {
 }
 
 /**
- * Menampilkan jawaban arti dari kartu Leitner
+ * Menampilkan jawaban arti dari kartu Leitner (exposed globally via user_app.js)
  */
 function revealLeitnerCard() {
   const word = appState.leitnerSessionWords[appState.leitnerSessionIndex];
@@ -660,7 +678,7 @@ function revealLeitnerCard() {
 
 /**
  * Menutup modal sesi latihan Leitner dan melakukan sinkronisasi jika ada hasil tertunda
- */
+ */ // (exposed globally via user_app.js)
 async function closeLeitnerSession() {
   document.getElementById('leitner-modal').classList.add('hidden');
 
@@ -700,11 +718,20 @@ async function closeLeitnerSession() {
 
 
 /**
- * Menutup modal jendela kamus pintar
- */
-function closeDictModal() {
+ * Menampilkan modal jendela kamus pintar
+ */ // (exposed globally via user_app.js)
+function showDictModal() {
+  document.getElementById('dict-modal').classList.remove('hidden');
+}
+
+/**
+ * Menyembunyikan modal jendela kamus pintar
+ */ // (exposed globally via user_app.js)
+function hideDictModal() {
   document.getElementById('dict-modal').classList.add('hidden');
 }
+
+
 
 /**
  * Memperbarui data statistik Dashboard secara berkala
@@ -712,15 +739,19 @@ function closeDictModal() {
 function updateDashboardStats() {
   if (!appState.currentUser) return;
 
-  const finishCount = appState.currentUser.stats ? appState.currentUser.stats.teksDibaca || 0 : 0;
-  document.getElementById('stat-books').textContent = `${finishCount} Teks`;
+  const finishCount = appState.currentUser.stats ? appState.currentUser.stats.teksDibaca || 0 : 0; //
+  const statBooksEl = document.getElementById('stat-books');
+  if (statBooksEl) statBooksEl.textContent = `${finishCount} Teks`;
   
   const vocabCount = appState.kamusUser ? appState.kamusUser.length : 0;
-  document.getElementById('stat-vocab').textContent = `${vocabCount} Kata`;
+  const statVocabEl = document.getElementById('stat-vocab');
+  if (statVocabEl) statVocabEl.textContent = `${vocabCount} Kata`;
 
-  document.getElementById('sidebar-vocab-count').textContent = vocabCount;
+  const sidebarVocabEl = document.getElementById('sidebar-vocab-count'); //
+  if (sidebarVocabEl) sidebarVocabEl.textContent = vocabCount;
 
   const sidebarLvl = document.getElementById('sidebar-level');
+  if (sidebarLvl) {
   if (vocabCount < 5) {
     sidebarLvl.textContent = "Level: Pre-A1";
     sidebarLvl.className = "text-[9px] font-extrabold text-pink-700 dark:text-pink-400 uppercase tracking-wide";
@@ -731,19 +762,20 @@ function updateDashboardStats() {
     sidebarLvl.textContent = "Level: A2";
     sidebarLvl.className = "text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide";
   }
+  }
 
   if (appState.kamusUser) {
-    document.getElementById('count-box-1').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 1).length;
-    document.getElementById('count-box-2').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 2).length;
-    document.getElementById('count-box-3').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 3).length;
-    document.getElementById('count-box-4').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 4).length;
-    document.getElementById('count-box-5').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 5).length;
-    document.getElementById('count-box-known').textContent = appState.kamusUser.filter(k => k.Status_Belajar && k.Status_Belajar.toString() === "Known").length;
+    if (document.getElementById('count-box-1')) document.getElementById('count-box-1').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 1).length;
+    if (document.getElementById('count-box-2')) document.getElementById('count-box-2').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 2).length;
+    if (document.getElementById('count-box-3')) document.getElementById('count-box-3').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 3).length;
+    if (document.getElementById('count-box-4')) document.getElementById('count-box-4').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 4).length;
+    if (document.getElementById('count-box-5')) document.getElementById('count-box-5').textContent = appState.kamusUser.filter(k => k.Status_Belajar == 5).length;
+    if (document.getElementById('count-box-known')) document.getElementById('count-box-known').textContent = appState.kamusUser.filter(k => k.Status_Belajar && k.Status_Belajar.toString() === "Known").length;
   }
 }
 
 /**
- * Menampilkan custom alert modal box
+ * Menampilkan custom alert modal box (exposed globally via user_app.js)
  */
 function showModal(title, message, iconClass = "fa-solid fa-circle-check text-emerald-500") {
   document.getElementById('modal-title').textContent = title;
@@ -753,7 +785,7 @@ function showModal(title, message, iconClass = "fa-solid fa-circle-check text-em
 }
 
 /**
- * Mengubah tombol menjadi indikator loading
+ * Mengubah tombol menjadi indikator loading (exposed globally via user_app.js)
  */
 function showSpinnerButton(btnId, show, originalText = "") {
   const btn = document.getElementById(btnId);
@@ -768,7 +800,7 @@ function showSpinnerButton(btnId, show, originalText = "") {
 }
 
 /**
- * Melakukan toggle / pergantian mode gelap dan terang
+ * Melakukan toggle / pergantian mode gelap dan terang (exposed globally via user_app.js)
  */
 function toggleDarkMode() {
   const isDark = document.documentElement.classList.toggle('dark');
@@ -779,4 +811,57 @@ function toggleDarkMode() {
   const mobileIcon = document.getElementById('theme-icon-mobile');
   if (sidebarIcon) sidebarIcon.className = iconClass;
   if (mobileIcon) mobileIcon.className = iconClass;
+}
+
+// Export all functions that need to be accessed from outside this module
+export {
+  switchView,
+  toggleAuthMode,
+  setupUserInterface,
+  renderLibrary,
+  filterLibrary,
+  searchLibrary,
+  loadReader,
+  renderInteractiveArabicText,
+  adjustReaderFont,
+  adjustReaderLineHeight,
+  resetReaderSettings,
+  closeModal,
+  buildDynamicModeBLayout,
+  toggleTranslation,
+  renderKamusTable,
+  filterKamusByBox,
+  loadLeitnerCard,
+  revealLeitnerCard,
+  closeLeitnerSession, // Ini adalah fungsi untuk modal Leitner, bukan modal kamus
+  showDictModal, // Ekspos fungsi baru untuk menampilkan modal
+  hideDictModal, // Ekspos fungsi baru untuk menyembunyikan modal
+  updateDashboardStats,
+  showModal,
+  showSpinnerButton,
+  toggleDarkMode
+};
+
+/**
+ * Mengambil bentuk berharakat sebuah item kamus dari data induk atau peta kosakata.
+ * @param {Object} item - Item kosakata dari kamusUser
+ * @returns {string} Bentuk berharakat / vocalized dari kata
+ */
+export function getVocalizedWord(item) {
+  if (!item) return "-";
+
+  // Ambil relasi dari ID_Kata_Induk terlebih dahulu
+  if (item.ID_Kata_Induk && item.ID_Kata_Induk !== "IND-NASKAH") {
+    const parent = appState.kataInduk.find(ki => ki.ID_Kata_Induk === item.ID_Kata_Induk);
+    if (parent) return parent.Kata_Induk;
+  }
+
+  // Ambil dari Peta Kosakata untuk harakat lengkap
+  const mapping = appState.petaKosakata.find(m => {
+    return normalizeArabic(m.Kata_Teks_Polos) === normalizeArabic(item.Kata_Polos) ||
+           normalizeArabic(m.Kata_Teks) === normalizeArabic(item.Kata_Polos);
+  });
+  if (mapping) return mapping.Kata_Teks;
+
+  return item.Kata_Polos;
 }
