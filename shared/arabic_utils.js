@@ -53,3 +53,27 @@ function arabicLightStemmer(word) {
     suffix: detectedSuffix
   };
 }
+
+/**
+ * Menghapus seluruh harakat dari teks Arab termasuk Syaddah
+ * @param {string} text - Teks Arab mentah
+ * @returns {string} Teks Arab tanpa harakat
+ */
+function cleanArabicHarakat(text) {
+  if (!text) return "";
+  return String(text).replace(/[\u064B-\u065F\u0670]/g, "");
+}
+
+/**
+ * Menormalisasi teks Arab: menghapus harakat, tatweel, dan menyamakan variasi Alif
+ * @param {string} text - Teks Arab mentah
+ * @returns {string} Teks Arab ternormalisasi untuk pencarian database yang akurat
+ */
+function normalizeArabic(text) {
+  if (text === null || text === undefined) return "";
+  let str = String(text).trim();
+  str = str.replace(/[\u064B-\u065F\u0670]/g, ""); // Hapus seluruh harakat
+  str = str.replace(/\u0640/g, ""); // Hapus Tatweel (Kashida)
+  str = str.replace(/[\u0622\u0623\u0625]/g, "\u0627"); // Samakan Alif (أ, إ, آ menjadi ا)
+  return str;
+}

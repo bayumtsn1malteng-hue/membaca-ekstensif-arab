@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>Panel Admin - Pengelola Latihan Arab</title>
+ 
+ <!-- Google Fonts -->
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+ 
+ <!-- Tailwind CSS -->
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script>
+ tailwind.config = {
+ theme: {
+ extend: {
+ fontFamily: {
+ sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+ arabic: ['Amiri', 'serif'],
+ }
+ }
+ }
+ }
+ </script>
+ <style>
+ .no-scrollbar::-webkit-scrollbar { display: none; }
+ .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+ .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+ .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+ .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+ .active-tap:active { transform: scale(0.97); }
+ .bg-grid-texture {
+ background-color: #f8fafc;
+ background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
+ background-size: 24px 24px;
+ }
+ </style>
+
+ <!-- PROTEKSI ADMIN (Relasi dengan auth.js) -->
+ <script src="js/auth.js"></script>
+ <script>checkAdminSession();</script>
+</head>
+<body class="bg-grid-texture text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+ <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+ <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3 md:h-20 gap-3">
+ <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-start">
+ <div class="flex items-center space-x-3">
+ <div class="bg-violet-600 text-white p-2.5 rounded-2xl shadow-md flex-shrink-0">
+ <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+ </svg>
+ </div>
+ <div>
+ <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Membaca Ekstensif Arab</h1>
+ <p class="text-[10px] text-violet-600 font-bold tracking-wider uppercase">Pengelola Latihan v0.5.6-alpha</p>
+ </div>
+ </div>
+ <button onclick="handleAdminLogout()" class="md:hidden active-tap px-3 py-1.5 rounded-lg border border-rose-200 text-[10px] font-bold text-rose-600 flex items-center space-x-1">
+ <span>Keluar</span>
+ </button>
+ </div>
+
+ <div class="flex items-center space-x-3 w-full md:w-auto">
+ <nav class="flex-1 md:flex-none flex overflow-x-auto no-scrollbar space-x-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/50">
+ <button id="nav-btn-input" onclick="switchNav('input')" class="active-tap flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white text-violet-700 shadow-xs flex-shrink-0">
+ <span>1. Input Soal</span>
+ </button>
+ <button id="nav-btn-vocab" onclick="switchNav('vocab')" class="active-tap flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 flex-shrink-0">
+ <span>2. Kosakata</span>
+ </button>
+ <button id="nav-btn-preview" onclick="switchNav('preview')" class="active-tap flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 flex-shrink-0">
+ <span>3. Pratinjau</span>
+ </button>
+ <button id="nav-btn-history" onclick="switchNav('history')" class="active-tap flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 flex-shrink-0">
+ <span>4. Riwayat</span>
+ </button>
+ </nav>
+ <button onclick="handleAdminLogout()" class="hidden md:flex active-tap px-4 py-2 rounded-xl bg-violet-50 border border-violet-100 hover:bg-violet-100 text-violet-700 text-xs font-bold items-center space-x-1.5 transition">
+ <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+ </svg>
+ <span>Keluar</span>
+ </button>
+ </div>
+ </div>
+ </header>
+
+ <div id="toast-container" class="fixed top-4 sm:top-24 right-4 left-4 sm:left-auto z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+ <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <!-- SECTION 1: INPUT SOAL -->
+    <section id="section-input" class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Metadata & Arab Content -->
+            <div class="space-y-6">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Metadata Seri & Soal Arab</h2>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Nama Seri (Himpunan Soal)</label>
+                                <button onclick="manualRefreshMetadata()" id="btn-refresh-meta" class="text-[9px] font-bold text-violet-600 hover:text-violet-800 transition flex items-center gap-1 outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" /></svg>
+                                    Muat Ulang Metadata
+                                </button>
+                            </div>
+                            <input type="text" id="Nama_Seri" list="list-nama-seri" oninput="handleSeriesInput()" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-violet-500 outline-none transition text-sm bg-slate-50/50" placeholder="Contoh: Kisah Para Nabi - Bagian 1">
+                            <datalist id="list-nama-seri"></datalist>
+                            <input type="hidden" id="ID_Himpunan_Latihan_Hidden">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nomor Soal</label>
+                            <input type="number" id="Nomor_Soal" oninput="checkDuplicateNumber()" min="1" max="100" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-violet-500 outline-none transition text-sm bg-slate-50/50" placeholder="1">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tingkat Kesulitan</label>
+                            <select id="kesulitan" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
+                                <option value="A1">A1 (Pemula)</option>
+                                <option value="A2">A2</option>
+                                <option value="B1">B1</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Jawaban Benar</label>
+                            <select id="jawaban_benar" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
+                                <option value="A">Pilihan A</option>
+                                <option value="B">Pilihan B</option>
+                                <option value="C">Pilihan C</option>
+                                <option value="D">Pilihan D</option>
+                                <option value="E">Pilihan E</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Teks Soal (Arab)</label>
+                        <textarea id="soal_arab" dir="rtl" rows="2" class="w-full p-3 rounded-xl border border-slate-200 focus:border-violet-500 outline-none transition text-xl font-arabic bg-slate-50/50" placeholder="...أكتب السؤال هنا"></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pilihan Jawaban (Arab)</label>
+                        <input type="text" id="opt_a_ar" dir="rtl" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-lg font-arabic text-right bg-white" placeholder="Pilihan أ">
+                        <input type="text" id="opt_b_ar" dir="rtl" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-lg font-arabic text-right bg-white" placeholder="Pilihan ب">
+                        <input type="text" id="opt_c_ar" dir="rtl" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-lg font-arabic text-right bg-white" placeholder="Pilihan ج">
+                        <input type="text" id="opt_d_ar" dir="rtl" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-lg font-arabic text-right bg-white" placeholder="Pilihan د">
+                        <input type="text" id="opt_e_ar" dir="rtl" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-lg font-arabic text-right bg-white" placeholder="Pilihan هـ (Opsional)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indonesia Content -->
+            <div class="space-y-6">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Terjemahan Indonesia</h2>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Teks Soal (Indo)</label>
+                        <textarea id="soal_id" rows="2" class="w-full p-3 rounded-xl border border-slate-200 focus:border-violet-500 outline-none transition text-sm bg-slate-50/50" placeholder="Tulis soal dalam Bahasa Indonesia..."></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pilihan Jawaban (Indo)</label>
+                        <input type="text" id="opt_a_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" placeholder="Pilihan A">
+                        <input type="text" id="opt_b_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" placeholder="Pilihan B">
+                        <input type="text" id="opt_c_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" placeholder="Pilihan C">
+                        <input type="text" id="opt_d_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" placeholder="Pilihan D">
+                        <input type="text" id="opt_e_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" placeholder="Pilihan E (Opsional)">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-emerald-600 uppercase mb-1">Feedback Jawaban Benar</label>
+                        <textarea id="feedback_benar" rows="2" class="w-full p-3 rounded-xl border border-emerald-100 focus:border-emerald-500 outline-none transition text-sm bg-emerald-50/20" placeholder="Penjelasan mengapa jawaban tersebut benar..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="simpanLatihan()" class="active-tap w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-2xl shadow-lg transition flex items-center justify-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span>Simpan Soal ke Pustaka</span>
+        </button>
+    </section>
+
+    <!-- SECTION 2: KOSAKATA -->
+    <section id="section-vocab" class="hidden space-y-6">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="p-1.5 bg-violet-50 text-violet-600 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                        </svg>
+                    </span>
+                    <h2 class="text-sm font-bold text-slate-900">Pemetaan Kosakata dari Soal</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="select-map-seri" onchange="updateQuestionNumberOptions()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 outline-none focus:border-violet-500 transition">
+                        <option value="">Pilih Seri...</option>
+                    </select>
+                    <select id="select-map-nomor" onchange="loadQuestionForMapping()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 outline-none focus:border-violet-500 transition">
+                        <option value="">No Soal...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="auto-suggest-vocab" class="p-3 bg-violet-50/50 rounded-2xl border border-violet-100 space-y-2 hidden">
+                <div class="flex items-center space-x-2 text-[9px] font-bold text-violet-600 uppercase tracking-widest">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    <span>Saran Prioritas Pemetaan (Populer & Belum Tuntas)</span>
+                </div>
+                <div id="suggest-list" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-[10px]">
+                <span class="flex items-center space-x-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-100">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    <span>Lengkap (Terpetakan)</span>
+                </span>
+                <span class="flex items-center space-x-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-100">
+                    <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                    <span>Butuh Induk</span>
+                </span>
+                <span class="flex items-center space-x-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                    <span class="w-1.5 h-1.5 bg-slate-900 rounded-full"></span>
+                    <span>Baru / Belum Diproses</span>
+                </span>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 min-h-[12rem] flex flex-col justify-center">
+                <div id="quest-vocab-container" class="space-y-6 select-text">
+                    <span class="text-slate-400 text-sm font-sans w-full text-center">Menunggu pilihan soal untuk dipetakan...</span>
+                </div>
+            </div>
+            <p class="text-[10px] text-slate-400 italic text-center">Klik pada kata untuk membuka detail pemetaan.</p>
+        </div>
+    </section>
+
+    <!-- SECTION 3: PRATINJAU -->
+    <section id="section-preview" class="hidden">
+        <div class="max-w-sm mx-auto bg-slate-900 rounded-[3rem] p-4 border-[8px] border-slate-800 shadow-2xl">
+            <div class="bg-white rounded-[2rem] overflow-hidden min-h-[500px] flex flex-col">
+                <div class="bg-violet-600 p-4 text-white text-center">
+                    <div class="w-12 h-1 bg-white/20 rounded-full mx-auto mb-3"></div>
+                    <h3 class="text-xs font-bold uppercase tracking-widest opacity-80">Latihan Mandiri</h3>
+                </div>
+                <div class="p-6 flex-1 flex flex-col justify-center space-y-8">
+                    <div class="space-y-2">
+                        <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-violet-500 w-1/3"></div>
+                        </div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase text-center">Soal 3 dari 10</p>
+                    </div>
+                
+                    <p id="preview_soal_ar" class="text-2xl font-arabic text-center leading-relaxed" dir="rtl">متى يذهب الطالب إلى المدرسة؟</p>
+                    
+                    <div class="space-y-3">
+                        <button class="w-full p-4 rounded-2xl border-2 border-slate-100 text-right font-arabic hover:border-violet-500 transition active-tap">أ. في الصباح</button>
+                        <button class="w-full p-4 rounded-2xl border-2 border-slate-100 text-right font-arabic hover:border-violet-500 transition active-tap">ب. في المساء</button>
+                    <div id="preview_options_container" class="space-y-3">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: RIWAYAT -->
+    <section id="section-history" class="hidden">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <h2 class="text-sm font-bold text-slate-900">Riwayat Pustaka Soal</h2>
+                <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                    <label class="flex items-center space-x-2 cursor-pointer group">
+                        <input type="checkbox" id="filter-unmapped" onchange="renderHistoryTable()" class="w-4 h-4 text-violet-600 border-slate-300 rounded focus:ring-violet-500 transition cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-500 group-hover:text-violet-600 transition uppercase tracking-wider">Belum Tuntas (Amber/Slate)</span>
+                    </label>
+                    <select id="filter-percentage" onchange="renderHistoryTable()" class="px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-600 bg-white outline-none focus:border-violet-500 transition shadow-sm">
+                        <option value="all">Semua Pemetaan</option>
+                        <option value="under50">Sangat Rendah (< 50%)</option>
+                        <option value="50to99">Sedang (50% - 99%)</option>
+                        <option value="completed">Lengkap (100%)</option>
+                    </select>
+                    <button onclick="analyzePopularVocab()" class="active-tap bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        <span>Analisis Kata Terpopuler</span>
+                    </button>
+
+                    <button id="btn-bulk-delete" onclick="deleteIncompleteBulk()" class="active-tap bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-sm hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Hapus Belum Tuntas</span>
+                    </button>
+                    <button onclick="exportLatihanToJSON()" class="active-tap bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Ekspor JSON</span>
+                    </button>
+                    <div class="relative flex-1 md:w-64">
+                    <input type="text" id="search-history" oninput="renderHistoryTable()" class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 outline-none text-xs focus:border-violet-500 transition shadow-sm" placeholder="Cari seri atau teks...">
+                    <div class="absolute left-3 top-2.5 text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-sm">
+                    <thead class="text-[10px] font-bold uppercase text-slate-400 border-b border-slate-100">
+                        <tr>
+                            <th class="py-3 px-4">Seri / Himpunan</th>
+                            <th class="py-3 px-4 text-center">No</th>
+                            <th class="py-3 px-4">Teks Soal (Indo)</th>
+                            <th class="py-3 px-4 text-center">Pemetaan</th>
+                            <th class="py-3 px-4 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="riwayat-soal-body" class="divide-y divide-slate-50">
+                        <!-- Data dinamis -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+ </main>
+
+ <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
+ <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-[10px] text-slate-400 space-y-1">
+ <p>&copy; 2026 Membaca Ekstensif Arab - Latihan Module.</p>
+ </div>
+ </footer>
+
+ <!-- MODAL: ANALISIS KOSAKATA TERPOPULER -->
+ <div id="modal-popular-vocab" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onclick="closePopularModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative bg-white rounded-3xl p-6 w-full max-w-lg border border-slate-200 shadow-2xl space-y-5 flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                        Analisis Kosakata Terpopuler
+                    </h3>
+                    <button onclick="downloadPopularVocabCSV()" class="active-tap text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Download CSV
+                    </button>
+                </div>
+                <button onclick="closePopularModal()" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overflow-y-auto custom-scrollbar flex-1 pr-1">
+                <table class="w-full text-left text-xs">
+                    <thead class="sticky top-0 bg-white text-[9px] font-extrabold uppercase text-slate-400 border-b border-slate-100">
+                        <tr>
+                            <th class="py-2 px-3 text-right">Kata (Arab)</th>
+                            <th class="py-2 px-3 text-center">Frekuensi</th>
+                            <th class="py-2 px-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popular-vocab-body" class="divide-y divide-slate-50"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+ </div>
+
+ <!-- MODAL: PEMETAAN KOSAKATA (Relasi Admin v0.5.0) -->
+ <div id="modal-vocab-mapper" class="fixed inset-0 z-50 overflow-y-auto hidden">
+ <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeVocabModal()"></div>
+ <div class="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4 text-center">
+ <div class="relative transform overflow-hidden rounded-t-3xl sm:rounded-2xl bg-white text-left shadow-2xl transition-all w-full sm:max-w-2xl border border-slate-200 max-h-[92vh] sm:max-h-none flex flex-col">
+ <div class="bg-gradient-to-r from-violet-900 to-violet-800 px-5 py-4 sm:py-5 text-white flex items-center justify-between flex-shrink-0">
+ <div>
+ <h3 class="text-sm sm:text-md font-bold text-white">Detail Kosakata Latihan</h3>
+ <p class="text-[10px] sm:text-xs text-violet-200">Hubungkan kata soal ke relasi data target</p>
+ </div>
+ <button type="button" onclick="closeVocabModal()" class="text-violet-200 hover:text-white p-1 rounded-lg active-tap">
+ <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+ </button>
+ </div>
+ <form id="form-vocab-mapper" onsubmit="handleSaveVocabMapping(event)" class="p-5 sm:p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+ <div class="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+ <div class="flex flex-col">
+ <label class="block text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Kategori Kata</label>
+ <select id="mapper-kategori-induk" class="px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white outline-none focus:border-violet-500 transition">
+ <option value="Isim">Isim (Kata Benda)</option>
+ <option value="Fi'il">Fi'il (Kata Kerja)</option>
+ <option value="Harf">Harf (Partikel)</option>
+ </select>
+ </div>
+ <div>
+ <span class="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Kata Teks Arab (Berharakat)</span>
+ <span id="mapper-clean-word" class="text-[11px] sm:text-xs font-semibold text-violet-600 block mt-0.5">Bersih: -</span>
+ </div>
+ <input type="text" id="mapper-active-word" dir="rtl" oninput="document.getElementById('mapper-clean-word').innerText = 'Bersih: ' + cleanArabicDiacritics(this.value)" class="bg-white border-2 border-violet-200 text-slate-800 font-arabic text-3xl sm:text-5xl text-right h-24 sm:h-28 px-4 rounded-xl font-bold w-full sm:w-1/2 shadow-inner focus:ring-2 focus:ring-violet-150 outline-none transition" placeholder="Kata soal...">
+ </div>
+ <div>
+ <label class="block text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Arti Kata Teks</label>
+ <input type="text" id="mapper-arti-teks" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 outline-none transition text-base sm:text-sm" placeholder="Contoh: untuk sekolahku" required>
+ </div>
+ <div>
+ <label class="block text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center space-x-1.5">Jenis Kata</label>
+ <div class="grid grid-cols-2 gap-3 mt-1">
+ <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition active-tap">
+ <div class="flex items-center space-x-3">
+ <input type="radio" name="input-jenis-kata" value="Induk" onchange="toggleJenisKataForm()" class="h-4.5 w-4.5 text-violet-600 border-slate-300 focus:ring-violet-500">
+ <span class="text-xs sm:text-sm font-semibold text-slate-700">Induk</span>
+ </div>
+ <span class="text-[9px] text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full font-bold">Kata_Induk & Peta</span>
+ </label>
+ <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition active-tap">
+ <div class="flex items-center space-x-3">
+ <input type="radio" name="input-jenis-kata" value="Gabungan" onchange="toggleJenisKataForm()" checked class="h-4.5 w-4.5 text-violet-600 border-slate-300 focus:ring-violet-500">
+ <span class="text-xs sm:text-sm font-semibold text-slate-700">Gabungan</span>
+ </div>
+ <span class="text-[9px] text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full font-bold">Peta</span>
+ </label>
+ </div>
+ </div>
+ <div id="panel-jenis-gabungan" class="p-4 rounded-xl border-2 border-dashed border-amber-100 space-y-4 bg-amber-50/10">
+ <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div class="relative">
+ <label class="block text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">KATA INDUK</label>
+ <input type="text" id="gabungan-kata-induk" oninput="showKataIndukAutocomplete(this.value)" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-500 outline-none transition text-xl sm:text-3xl bg-white font-arabic text-right h-16 sm:h-20 font-bold" placeholder="Cari root...">
+ <div id="autocomplete-results-gabungan" class="absolute left-0 right-0 z-30 mt-1 max-h-40 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg text-xs hidden custom-scrollbar"></div>
+ </div>
+ <div>
+ <label class="block text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Arti Kata Induk</label>
+ <input type="text" id="gabungan-arti-induk" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-base sm:text-sm bg-white focus:border-violet-500 outline-none transition text-slate-700" placeholder="Otomatis terisi...">
+ <input type="hidden" id="gabungan-id-induk">
+ </div>
+ </div>
+ <div class="space-y-3 pt-3 border-t border-amber-100/40">
+ <label class="block text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Identifikasi Imbuhan (Stemmer)</label>
+ <div id="sambungan-rows-container" class="space-y-3"></div>
+ <button type="button" onclick="addSambunganRow()" class="text-xs font-bold text-violet-600 hover:text-violet-800 flex items-center space-x-1.5 py-2 active-tap">
+ <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+ <span>Tambah Imbuhan</span>
+ </button>
+ </div>
+ </div>
+ <div class="flex items-center justify-end space-x-3 border-t border-slate-100 pt-4 flex-shrink-0">
+ <button type="button" onclick="closeVocabModal()" class="active-tap px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs sm:text-sm transition">Batal</button>
+ <button type="submit" class="active-tap px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition">Simpan Pemetaan</button>
+ </div>
+ </form>
+ </div>
+ </div>
+ </div>
+
+ <!-- Modal Konfirmasi Hapus -->
+ <div id="modal-delete" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onclick="closeModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative bg-white rounded-2xl p-6 w-full max-w-sm border border-slate-200 shadow-2xl space-y-4">
+            <h3 class="text-md font-bold text-rose-600 flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span>Hapus Seri Soal?</span>
+            </h3>
+            <p id="delete-text" class="text-xs text-slate-500 leading-relaxed"></p>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="closeModal()" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Batal</button>
+                <button onclick="executeDeleteLatihan()" class="px-4 py-2 text-xs font-bold text-white bg-rose-600 rounded-xl shadow-md active-tap transition hover:bg-rose-700">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+ </div>
+
+ <!-- Scripts -->
+ <script src="../shared/arabic_utils.js"></script>
+ <script src="js/api.js"></script>
+ <script src="js/ui.js"></script>
+ <script>
+    // State global untuk metadata latihan
+    let dbJudulHimpunan = [];
+    let dbPustakaLatihan = [];
+    let dbPetaKosakata = [];
+    let dbKataInduk = [];
+    let dbMasterSambungan = [];
+    let stateActiveWord = {};
+    let deleteTarget = { idHimpunan: null, nomorSoal: null };
+
+    const DB_KEYS = {
+        KOSAKATA: "membaca_peta_kosakata",
+        KATA_INDUK: "membaca_kata_induk",
+        SAMBUNGAN: "membaca_master_sambungan"
+    };
+
+    const MASTER_SAMBUNGAN_DEFAULT = [
+        { ID_Sambungan: "SAM-PRE-0001", Bentuk_Sambungan: "لـ", Letak_Sambungan: "awal", Fungsi_Sambungan: "untuk / milik" },
+        { ID_Sambungan: "SAM-PRE-0002", Bentuk_Sambungan: "الـ", Letak_Sambungan: "awal", Fungsi_Sambungan: "penjelas makrifah" },
+        { ID_Sambungan: "SAM-SU-0001", Bentuk_Sambungan: "يـ", Letak_Sambungan: "akhir", Fungsi_Sambungan: "kepunyaan saya" }
+    ];
+
+    /**
+     * Menarik metadata seri latihan dari spreadsheet (GET request)
+     */
+    async function refreshLatihanMetadata() {
+        const apiUrl = localStorage.getItem("membaca_api_url");
+        if (!apiUrl) {
+            console.warn("URL API belum diatur. Silakan atur di panel admin utama.");
+            return;
+        }
+
+        try {
+            const response = await fetch(apiUrl);
+            const result = await response.json();
+            if (result.status === "success" && result.data) {
+                dbJudulHimpunan = result.data.judul_himpunan_latihan || [];
+                dbPustakaLatihan = result.data.pustaka_latihan || [];
+                dbPetaKosakata = result.data.peta_kosakata || [];
+                dbKataInduk = result.data.kata_induk || [];
+                dbMasterSambungan = result.data.sambungan || MASTER_SAMBUNGAN_DEFAULT;
+                
+                // Sinkronkan ke LocalStorage agar fungsi mapping bisa membacanya
+                localStorage.setItem(DB_KEYS.KOSAKATA, JSON.stringify(dbPetaKosakata));
+                localStorage.setItem(DB_KEYS.KATA_INDUK, JSON.stringify(dbKataInduk));
+                localStorage.setItem(DB_KEYS.SAMBUNGAN, JSON.stringify(dbMasterSambungan));
+
+                updateSeriMappingSelect();
+                renderHistoryTable();
+
+                const dl = document.getElementById('list-nama-seri');
+                if (dl) {
+                    dl.innerHTML = dbJudulHimpunan.map(item => `<option value="${item.Judul_Himpunan_Latihan}"></option>`).join('');
+                }
+                
+                console.log("[Metadata] Data seri berhasil diperbarui.");
+            }
+        } catch (err) {
+            console.error("[Metadata] Gagal sinkronisasi data seri:", err);
+        }
+    }
+
+    function updateSeriMappingSelect() {
+        const seriSelect = document.getElementById('select-map-seri');
+        if (!seriSelect) return;
+        const currentVal = seriSelect.value;
+        seriSelect.innerHTML = '<option value="">Pilih Seri...</option>';
+        dbJudulHimpunan.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.ID_Himpunan_Latihan;
+            opt.text = item.Judul_Himpunan_Latihan;
+            seriSelect.appendChild(opt);
+        });
+        seriSelect.value = currentVal;
+    }
+
+    function updateQuestionNumberOptions() {
+        const seriId = document.getElementById('select-map-seri').value;
+        const numSelect = document.getElementById('select-map-nomor');
+        numSelect.innerHTML = '<option value="">No Soal...</option>';
+        if (!seriId) return;
+        const questions = dbPustakaLatihan.filter(q => q.ID_Himpunan_Latihan === seriId);
+        questions.sort((a, b) => a.Nomor_Soal - b.Nomor_Soal);
+        questions.forEach(q => {
+            const opt = document.createElement('option');
+            opt.value = q.Nomor_Soal;
+            opt.text = q.Nomor_Soal;
+            numSelect.appendChild(opt);
+        });
+    }
+
+    function loadQuestionForMapping() { renderQuestionVocabFeedback(); }
+
+    function renderQuestionVocabFeedback() {
+        const seriId = document.getElementById('select-map-seri').value;
+        const noSoal = document.getElementById('select-map-nomor').value;
+        const container = document.getElementById('quest-vocab-container');
+        if (!seriId || !noSoal) {
+            container.innerHTML = `<span class="text-slate-400 text-sm font-sans w-full text-center">Menunggu pilihan soal...</span>`;
+            return;
+        }
+        const question = dbPustakaLatihan.find(q => q.ID_Himpunan_Latihan === seriId && q.Nomor_Soal == noSoal);
+        if (!question) {
+            container.innerHTML = `<span class="text-rose-400 text-sm font-sans w-full text-center">Soal tidak ditemukan.</span>`;
+            return;
+        }
+
+        container.innerHTML = "";
+
+        // Fungsi pembantu untuk merender blok kata per bagian (Soal/Pilihan)
+        const renderBlock = (title, textContent) => {
+            if (!textContent) return;
+            const arPart = textContent.split('\n---\n')[0].trim();
+            if (!arPart) return;
+
+            const block = document.createElement('div');
+            block.className = "space-y-2 border-b border-slate-100 pb-4 last:border-0";
+            block.innerHTML = `<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${title}</p>`;
+            
+            const wordsDiv = document.createElement('div');
+            wordsDiv.className = "flex flex-wrap gap-x-2.5 gap-y-3.5 justify-start text-right text-2xl sm:text-3xl font-arabic leading-[3.5rem]";
+            wordsDiv.dir = "rtl";
+
+            const rawWords = arPart.replace(/\s+/g, ' ').split(' ');
+            rawWords.forEach(word => {
+                const cleaned = cleanArabicDiacritics(word);
+                const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === cleaned);
+                const directIndukMatch = dbKataInduk.find(i => i.Kata_Induk_Polos === cleaned);
+                let textColorClass = "text-slate-900 bg-white border border-slate-200 hover:bg-slate-100";
+                if (directIndukMatch) {
+                    textColorClass = "text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold hover:bg-emerald-100";
+                } else if (vocabMatch) {
+                    textColorClass = vocabMatch.ID_Kata_Induk ? "text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold hover:bg-emerald-100" : "text-amber-700 bg-amber-50 border border-amber-200 font-semibold hover:bg-amber-100";
+                }
+                const span = document.createElement("span");
+                span.className = `active-tap py-1.5 px-3.5 rounded-xl shadow-xs transition cursor-pointer ${textColorClass}`;
+                span.innerText = word;
+                span.onclick = () => openVocabPopupForWord(word, cleaned);
+                wordsDiv.appendChild(span);
+            });
+            block.appendChild(wordsDiv);
+            container.appendChild(block);
+        };
+
+        renderBlock("Pertanyaan", question.Teks_Soal);
+        renderBlock("Pilihan أ", question.Pilihan_A);
+        renderBlock("Pilihan ب", question.Pilihan_B);
+        renderBlock("Pilihan ج", question.Pilihan_C);
+        renderBlock("Pilihan د", question.Pilihan_D);
+        renderBlock("Pilihan هـ", question.Pilihan_E);
+    }
+
+    // --- LOGIKA MODAL PEMETAAN DILAYANI OLEH admin/js/ui.js SECARA MODULAR ---
+
+    async function handleSaveVocabMapping(event) {
+        event.preventDefault();
+        
+        // 1. Ambil data dasar dari form
+        const jenisVal = document.querySelector('input[name="input-jenis-kata"]:checked').value;
+        const rawWord = document.getElementById("mapper-active-word").value.trim();
+        const cleanWord = cleanArabicDiacritics(rawWord);
+        const artiTeks = document.getElementById("mapper-arti-teks").value.trim();
+        const idHimpunan = document.getElementById('ID_Himpunan_Latihan_Hidden').value;
+        const kategoriInduk = document.getElementById('mapper-kategori-induk').value;
+
+        let id_kata_induk = "";
+
+        // 2. SINKRONISASI KATA INDUK (Resolusi ID dari Spreadsheet)
+        // Identifikasi target kata induk berdasarkan mode (Induk atau Gabungan)
+        const kataIndukTarget = (jenisVal === "Induk") ? cleanWord : document.getElementById("gabungan-kata-induk").value.trim();
+        const artiIndukTarget = (jenisVal === "Induk") ? artiTeks : document.getElementById("gabungan-arti-induk").value.trim();
+
+        if (kataIndukTarget && artiIndukTarget) {
+            // Selalu panggil backend saveVocab (Induk) untuk 'Find or Create' ID_Kata_Induk
+            const responseInduk = await apiCall({ 
+                action: "saveVocab", 
+                data: { 
+                    jenis_kata: "Induk", 
+                    Kata_Induk: kataIndukTarget, 
+                    Kata_Induk_Polos: cleanArabicDiacritics(kataIndukTarget), 
+                    Arti_Kata_Induk: artiIndukTarget, 
+                    Kategori: kategoriInduk 
+                } 
+            });
+            
+            if (responseInduk.status === "success" && responseInduk.result.id_induk) {
+                id_kata_induk = responseInduk.result.id_induk;
+            } else {
+                showToast("Gagal mendapatkan relasi Kata Induk dari server.", "error");
+                return;
+            }
+        }
+
+        // 3. PROSES DATA SAMBUNGAN (AFIKS)
+        const rows = document.querySelectorAll("#sambungan-rows-container > div");
+        let sambunganData = {};
+        rows.forEach(r => {
+            const slot = r.querySelector(".row-slot").value;
+            const bentuk = r.querySelector(".row-bentuk").value.trim();
+            if (bentuk) {
+                let match = dbMasterSambungan.find(s => s.Bentuk_Sambungan === bentuk);
+                if (!match) {
+                    const genId = "SAM-" + (slot.includes("Awal") ? "PRE-" : "SU-") + Math.floor(1000 + Math.random() * 9000);
+                    match = { ID_Sambungan: genId, Bentuk_Sambungan: bentuk, Letak_Sambungan: slot.includes("Awal") ? "awal" : "akhir" };
+                    dbMasterSambungan.push(match);
+                    localStorage.setItem(DB_KEYS.SAMBUNGAN, JSON.stringify(dbMasterSambungan));
+                }
+                sambunganData[slot] = match.ID_Sambungan;
+            }
+        });
+
+        // 4. SIMPAN PEMETAAN KE PETA_KOSAKATA
+        const targetRecord = {
+            ID_Kosakata: `VOC-LAT-${Date.now()}`,
+            ID_Teks: idHimpunan || "", // Menggunakan ID_Himpunan_Latihan sebagai referensi sumber
+            Kata_Teks: rawWord, 
+            Kata_Teks_Polos: cleanWord, 
+            Arti_Kata_Teks: artiTeks, 
+            ID_Kata_Induk: id_kata_induk, 
+            ...sambunganData
+        };
+
+        const responsePeta = await apiCall({ action: "saveVocab", data: { jenis_kata: "Gabungan", ...targetRecord } });
+        
+        if (responsePeta.status === "success") {
+            // Segarkan metadata untuk memperbarui cache lokal Kata_Induk dan Peta_Kosakata
+            await refreshLatihanMetadata();
+            closeVocabModal();
+            renderQuestionVocabFeedback();
+            showToast("Pemetaan kosakata berhasil disimpan secara realtime!", "success");
+        } else {
+            showToast("Gagal menyimpan pemetaan ke server.", "error");
+        }
+    }
+
+    function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `flex items-center space-x-2.5 px-4 py-3 rounded-xl border shadow-lg text-xs font-semibold bg-white transition duration-300 transform translate-x-20 opacity-0 pointer-events-auto`;
+        let colorClass = type === "error" ? "text-rose-700 border-rose-100 bg-rose-50" : (type === "warning" ? "text-amber-700 border-amber-100 bg-amber-50" : "text-emerald-700 border-emerald-100 bg-emerald-50");
+        toast.className += ` ${colorClass}`;
+        toast.innerHTML = `<span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.remove("translate-x-20", "opacity-0"), 10);
+        setTimeout(() => { toast.classList.add("translate-x-20", "opacity-0"); setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    /**
+     * Menangani input pada Nama Seri untuk mendeteksi seri yang sudah ada
+     */
+    function handleSeriesInput() {
+        const nameInput = document.getElementById('Nama_Seri').value.trim();
+        const idHidden = document.getElementById('ID_Himpunan_Latihan_Hidden');
+        const numInput = document.getElementById('Nomor_Soal');
+
+        if (!nameInput) {
+            idHidden.value = "";
+            numInput.value = "";
+            return;
+        }
+
+        // Cari apakah Nama Seri sudah ada di database
+        const match = dbJudulHimpunan.find(item => item.Judul_Himpunan_Latihan === nameInput);
+
+        if (match) {
+            idHidden.value = match.ID_Himpunan_Latihan;
+            // Jika ditemukan, sarankan nomor soal berikutnya
+            numInput.value = (parseInt(match.Jumlah_Soal_Terdaftar) || 0) + 1;
+            checkDuplicateNumber();
+        } else {
+            // Jika benar-benar baru, kosongkan ID hidden agar di-generate otomatis saat simpan
+            idHidden.value = ""; 
+            numInput.value = 1;
+            checkDuplicateNumber();
+        }
+    }
+
+    /**
+     * Tombol refresh manual dengan feedback visual
+     */
+    async function manualRefreshMetadata() {
+        const btn = document.getElementById('btn-refresh-meta');
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin h-3 w-3 mr-1 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memperbarui...`;
+        await refreshLatihanMetadata();
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
+
+    /**
+     * Menghitung persentase kosakata yang sudah terpetakan (Hijau)
+     */
+    function getMappingPercentage(questionTeks) {
+        if (!questionTeks) return 0;
+        const soalAr = questionTeks.split('\n---\n')[0].trim();
+        if (!soalAr) return 0;
+        
+        const rawWords = soalAr.replace(/\s+/g, ' ').split(' ');
+        let mappedCount = 0;
+        let totalCount = 0;
+
+        for (const word of rawWords) {
+            const cleaned = cleanArabicDiacritics(word);
+            if (!cleaned) continue;
+            totalCount++;
+            
+            const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === cleaned);
+            const directIndukMatch = dbKataInduk.find(i => i.Kata_Induk_Polos === cleaned);
+            
+            if (directIndukMatch || (vocabMatch && vocabMatch.ID_Kata_Induk)) mappedCount++;
+        }
+        return totalCount === 0 ? 0 : Math.round((mappedCount / totalCount) * 100);
+    }
+
+    /**
+     * Mengekspor data Pustaka_Latihan ke dalam format JSON untuk penggunaan offline aplikasi user
+     */
+    function exportLatihanToJSON() {
+        if (!dbPustakaLatihan || dbPustakaLatihan.length === 0) {
+            alert("Tidak ada data untuk diekspor. Pastikan Anda sudah menekan 'Tarik Data Sheet'.");
+            return;
+        }
+
+        // Menyiapkan struktur data yang rapi dan terproses untuk aplikasi user
+        const exportData = {
+            metadata: {
+                app: "Membaca Ekstensif Arab - Latihan",
+                version: "1.0.0",
+                exportedAt: new Date().toISOString(),
+                total_series: dbJudulHimpunan.length,
+                total_questions: dbPustakaLatihan.length
+            },
+            himpunan: dbJudulHimpunan,
+            pustaka: dbPustakaLatihan.map(item => {
+                // Pisahkan konten bilingual yang digabung dengan '---'
+                const soalParts = (item.Teks_Soal || "").split('\n---\n');
+                
+                const parseChoice = (val) => {
+                    const parts = (val || "").split('\n---\n');
+                    return { ar: parts[0] || "", id: parts[1] || "" };
+                };
+
+                return {
+                    id_himpunan: item.ID_Himpunan_Latihan,
+                    id_soal: item.ID_No_Soal,
+                    seri: item.Judul_Himpunan_Latihan,
+                    nomor: item.Nomor_Soal,
+                    pertanyaan: {
+                        ar: soalParts[0] || "",
+                        id: soalParts[1] || ""
+                    },
+                    pilihan: {
+                        A: parseChoice(item.Pilihan_A),
+                        B: parseChoice(item.Pilihan_B),
+                        C: parseChoice(item.Pilihan_C),
+                        D: parseChoice(item.Pilihan_D),
+                        E: parseChoice(item.Pilihan_E)
+                    },
+                    kunci_jawaban: item.Jawaban_Benar,
+                    feedback: {
+                        benar: item.Feedback_Jawaban_Benar,
+                        salah: item.Feedback_Jawaban_Salah
+                    }
+                };
+            })
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `meb_latihan_offline_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        console.log("[Export] Database latihan berhasil diekspor ke JSON.");
+    }
+
+    /**
+     * Mengecek apakah sebuah soal memiliki kosakata yang belum tuntas dipetakan
+     */
+    function isQuestionIncomplete(questionTeks) {
+        if (!questionTeks) return false;
+        // Ambil bagian Arab saja (sebelum pemisah ---)
+        const soalAr = questionTeks.split('\n---\n')[0].trim();
+        if (!soalAr) return false;
+        
+        const rawWords = soalAr.replace(/\s+/g, ' ').split(' ');
+        for (const word of rawWords) {
+            const cleaned = cleanArabicDiacritics(word);
+            if (!cleaned) continue;
+            
+            const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === cleaned);
+            const directIndukMatch = dbKataInduk.find(i => i.Kata_Induk_Polos === cleaned);
+            
+            const isComplete = directIndukMatch || (vocabMatch && vocabMatch.ID_Kata_Induk);
+            if (!isComplete) return true; // Ditemukan kata Slate atau Amber
+        }
+        return false;
+    }
+
+    /**
+     * Mengecek integritas data untuk ID_Kata_Induk di Peta_Kosakata
+     * Mengembalikan true jika ada ID_Kata_Induk di Peta_Kosakata yang tidak ditemukan di Kata_Induk
+     */
+    function checkIntegrityForQuestion(questionTeks) {
+        if (!questionTeks) return false;
+        const soalAr = questionTeks.split('\n---\n')[0].trim();
+        if (!soalAr) return false;
+        
+        const rawWords = soalAr.replace(/\s+/g, ' ').split(' ');
+        for (const word of rawWords) {
+            const cleaned = cleanArabicDiacritics(word);
+            if (!cleaned) continue;
+            
+            const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === cleaned);
+            
+            // Jika ada entri di Peta_Kosakata dan memiliki ID_Kata_Induk
+            if (vocabMatch && vocabMatch.ID_Kata_Induk) {
+                const parentExists = dbKataInduk.some(i => i.ID_Kata_Induk === vocabMatch.ID_Kata_Induk);
+                if (!parentExists) return true; // Integritas rusak: ID_Kata_Induk tidak ditemukan
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Merender tabel Riwayat Soal secara dinamis
+     */
+    function renderHistoryTable() {
+        const tbody = document.getElementById('riwayat-soal-body');
+        if (!tbody) return;
+        
+        const searchTerm = document.getElementById('search-history')?.value.toLowerCase() || "";
+        const onlyUnmapped = document.getElementById('filter-unmapped')?.checked || false;
+        const percentageFilter = document.getElementById('filter-percentage')?.value || 'all';
+
+        tbody.innerHTML = "";
+
+        const filteredData = dbPustakaLatihan.filter(item => {
+            const series = (item.Judul_Himpunan_Latihan || "").toLowerCase();
+            const text = (item.Teks_Soal || "").toLowerCase();
+            const matchSearch = series.includes(searchTerm) || text.includes(searchTerm);
+            
+            if (!matchSearch) return false;
+            
+            // Filter Belum Tuntas
+            if (onlyUnmapped && !isQuestionIncomplete(item.Teks_Soal)) return false;
+
+            // Filter Rentang Persentase
+            const perc = getMappingPercentage(item.Teks_Soal);
+            if (percentageFilter === 'under50' && perc >= 50) return false;
+            if (percentageFilter === '50to99' && (perc < 50 || perc === 100)) return false;
+            if (percentageFilter === 'completed' && perc < 100) return false;
+            
+            return true;
+        });
+
+        filteredData.forEach(item => {
+            const teksSplit = (item.Teks_Soal || "").split('\n---\n');
+            const previewTeks = teksSplit[1] || teksSplit[0] || "-";
+            const isIncomplete = isQuestionIncomplete(item.Teks_Soal);
+            const percentage = getMappingPercentage(item.Teks_Soal);
+            const hasIntegrityIssue = checkIntegrityForQuestion(item.Teks_Soal);
+
+            let badgeColor = "bg-slate-100 text-slate-500 border-slate-200";
+            if (percentage === 100) badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-100";
+            else if (percentage > 0) badgeColor = "bg-amber-50 text-amber-700 border-amber-100";
+            
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition-colors";
+            tr.innerHTML = `
+                <td class="py-4 px-4 font-bold text-slate-700 text-xs">${item.Judul_Himpunan_Latihan}</td>
+                <td class="py-4 px-4 text-center font-mono text-xs flex items-center justify-center gap-1">
+                    ${hasIntegrityIssue ? `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    ` : ''}
+                    ${isIncomplete ? `<span class="inline-block w-1.5 h-1.5 bg-amber-400 rounded-full mr-1" title="Belum tuntas"></span>` : ''}
+                    ${item.Nomor_Soal}
+                </td>
+                <td class="py-4 px-4 text-slate-500 text-xs truncate max-w-[200px]">${previewTeks}</td>
+                <td class="py-4 px-4 text-center">
+                    <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold border ${badgeColor}">${percentage}%</span>
+                </td>
+                <td class="py-4 px-4 text-right space-x-2">
+                    <button onclick="editLatihanSoal('${item.ID_Himpunan_Latihan}', ${item.Nomor_Soal})" class="text-violet-600 hover:text-violet-800 p-2 rounded-lg hover:bg-violet-50 transition active-tap" title="Edit Soal">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    </button>
+                    <button onclick="konfirmasiHapus('${item.ID_Himpunan_Latihan}', ${item.Nomor_Soal})" class="text-rose-600 hover:text-rose-800 p-2 rounded-lg hover:bg-rose-50 transition active-tap" title="Hapus Soal">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    /**
+     * Menganalisis frekuensi kata di seluruh seri latihan
+     */
+    function analyzePopularVocab() {
+        const sorted = getPopularVocabData();
+        const tbody = document.getElementById('popular-vocab-body');
+        tbody.innerHTML = sorted.length ? "" : '<tr><td colspan="3" class="py-12 text-center text-slate-400">Data tidak tersedia.</td></tr>';
+
+        sorted.slice(0, 100).forEach(([word, freq]) => {
+            const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === word);
+            const directIndukMatch = dbKataInduk.find(i => i.Kata_Induk_Polos === word);
+            
+            let statusBadge = `<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[8px] font-bold">SLATE</span>`;
+            if (directIndukMatch) statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[8px] font-bold">INDUK</span>`;
+            else if (vocabMatch) {
+                statusBadge = vocabMatch.ID_Kata_Induk ? 
+                    `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[8px] font-bold">PETA</span>` : 
+                    `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[8px] font-bold">AMBER</span>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="py-2 px-3 text-right font-arabic text-lg font-bold text-slate-800">${word}</td>
+                <td class="py-2 px-3 text-center font-mono font-bold text-violet-600">${freq}x</td>
+                <td class="py-2 px-3">${statusBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        document.getElementById('modal-popular-vocab').classList.remove('hidden');
+    }
+
+    /**
+     * Menghitung frekuensi kata di seluruh seri latihan
+     */
+    function getPopularVocabData() {
+        const counts = {};
+        dbPustakaLatihan.forEach(item => {
+            if (!item.Teks_Soal) return;
+            const soalAr = item.Teks_Soal.split('\n---\n')[0].trim();
+            const words = soalAr.replace(/\s+/g, ' ').split(' ');
+            words.forEach(word => {
+                const clean = cleanArabicDiacritics(word);
+                if (!clean || clean.length < 2) return;
+                counts[clean] = (counts[clean] || 0) + 1;
+            });
+        });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    }
+
+    /**
+     * Mengunduh daftar kata populer ke CSV
+     */
+    function downloadPopularVocabCSV() {
+        const sorted = getPopularVocabData();
+        if (sorted.length === 0) return;
+
+        let csv = "Kata (Arab),Frekuensi,Status\n";
+        sorted.forEach(([word, freq]) => {
+            const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === word);
+            const directIndukMatch = dbKataInduk.find(i => i.Kata_Induk_Polos === word);
+            
+            let status = "SLATE";
+            if (directIndukMatch) status = "INDUK";
+            else if (vocabMatch) status = vocabMatch.ID_Kata_Induk ? "PETA" : "AMBER";
+            
+            csv += `${word},${freq},${status}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `analisis_kosakata_latihan_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    /**
+     * Menampilkan saran kosakata untuk dipetakan (Top Unmapped)
+     */
+    function renderAutoSuggestVocab() {
+        const container = document.getElementById('auto-suggest-vocab');
+        const list = document.getElementById('suggest-list');
+        if (!container || !list) return;
+
+        const sorted = getPopularVocabData();
+        const unmapped = sorted.filter(([word]) => {
+            const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === word);
+            const directIndukMatch = dbKataInduk.find(i => i.Kata_Induk_Polos === word);
+            return !directIndukMatch && (!vocabMatch || !vocabMatch.ID_Kata_Induk);
+        }).slice(0, 10);
+
+        if (unmapped.length === 0) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        list.innerHTML = "";
+        unmapped.forEach(([word, freq]) => {
+            const chip = document.createElement('button');
+            chip.className = "active-tap bg-white border border-violet-200 px-3 py-1 rounded-xl text-xs font-arabic font-bold text-violet-700 hover:border-violet-500 transition shadow-xs flex items-center space-x-2 gap-2";
+            chip.innerHTML = `<span>${word}</span><span class="text-[9px] bg-violet-100 px-1 rounded font-sans font-extrabold">${freq}x</span>`;
+            chip.onclick = () => selectQuestionByWord(word);
+            list.appendChild(chip);
+        });
+
+        container.classList.remove('hidden');
+    }
+
+    /**
+     * Mencari dan memilih soal berdasarkan kata yang disarankan
+     */
+    function selectQuestionByWord(word) {
+        const found = dbPustakaLatihan.find(item => {
+            const soalAr = item.Teks_Soal.split('\n---\n')[0];
+            return soalAr.includes(word);
+        });
+        
+        if (found) {
+            document.getElementById('select-map-seri').value = found.ID_Himpunan_Latihan;
+            updateQuestionNumberOptions();
+            document.getElementById('select-map-nomor').value = found.Nomor_Soal;
+            loadQuestionForMapping();
+            showToast(`Memuat soal yang mengandung "${word}"`, "info");
+        }
+    }
+
+    function closePopularModal() { document.getElementById('modal-popular-vocab').classList.add('hidden'); }
+
+    /**
+     * Menjalankan proses duplikasi seri latihan
+     */
+    async function initDuplicateSeries(sourceId, sourceName) {
+        const newName = prompt(`Gunakan nama baru untuk seri duplikat dari "${sourceName}":`, `${sourceName} (Copy)`);
+        if (!newName || newName.trim() === "") return;
+        
+        const newId = generateLatihanID();
+        
+        try {
+            const response = await apiCall({
+                action: "duplicateSeries",
+                sourceId: sourceId,
+                newName: newName.trim(),
+                newId: newId
+            });
+
+            if (response.success) {
+                alert(response.message);
+                await refreshLatihanMetadata();
+            } else {
+                alert("Gagal duplikasi: " + (response.error || "Kesalahan server"));
+            }
+        } catch (err) {
+            console.error("Duplicate error:", err);
+            alert("Gagal menghubungi server untuk menduplikasi data.");
+        }
+    }
+
+    /**
+     * Memuat kembali data soal ke dalam form input untuk diedit
+     */
+    function editLatihanSoal(idHimpunan, nomorSoal) {
+        const item = dbPustakaLatihan.find(i => i.ID_Himpunan_Latihan === idHimpunan && i.Nomor_Soal == nomorSoal);
+        if (!item) return;
+
+        // Set Metadata
+        document.getElementById('Nama_Seri').value = item.Judul_Himpunan_Latihan;
+        document.getElementById('ID_Himpunan_Latihan_Hidden').value = item.ID_Himpunan_Latihan;
+        document.getElementById('Nomor_Soal').value = item.Nomor_Soal;
+        document.getElementById('jawaban_benar').value = item.Jawaban_Benar || "A";
+
+        // Split Soal (Arab --- Indo)
+        const soalParts = (item.Teks_Soal || "").split('\n---\n');
+        document.getElementById('soal_arab').value = soalParts[0] || "";
+        document.getElementById('soal_id').value = soalParts[1] || "";
+
+        // Split Pilihan (Arab --- Indo)
+        ['A', 'B', 'C', 'D', 'E'].forEach(letter => {
+            const val = item[`Pilihan_${letter}`] || "";
+            const parts = val.split('\n---\n');
+            document.getElementById(`opt_${letter.toLowerCase()}_ar`).value = parts[0] || "";
+            document.getElementById(`opt_${letter.toLowerCase()}_id`).value = parts[1] || "";
+        });
+
+        document.getElementById('feedback_benar').value = item.Feedback_Jawaban_Benar || "";
+
+        // Switch ke tab input & scroll ke atas
+        switchNav('input');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Re-check visual duplikasi
+        checkDuplicateNumber();
+    }
+
+    /**
+     * Mengosongkan field input soal tanpa menghapus konteks seri/himpunan
+     */
+    function resetLatihanForm() {
+        const fieldsToClear = [
+            'soal_arab', 'soal_id', 
+            'opt_a_ar', 'opt_b_ar', 'opt_c_ar', 'opt_d_ar', 'opt_e_ar',
+            'opt_a_id', 'opt_b_id', 'opt_c_id', 'opt_d_id', 'opt_e_id',
+            'feedback_benar'
+        ];
+        fieldsToClear.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+
+        // Reset indikator warna pada Nomor Soal
+        const numInput = document.getElementById('Nomor_Soal');
+        numInput.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-900');
+    }
+
+    /**
+     * Indikator merah real-time jika nomor soal sudah ada
+     */
+    function checkDuplicateNumber() {
+        const numInput = document.getElementById('Nomor_Soal');
+        const idHimpunan = document.getElementById('ID_Himpunan_Latihan_Hidden').value;
+        const val = numInput.value;
+        if (!idHimpunan || !val) {
+            numInput.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-900');
+            return;
+        }
+        const seriesData = dbJudulHimpunan.find(item => item.ID_Himpunan_Latihan === idHimpunan);
+        const isDuplicate = seriesData && seriesData["ID_Soal_" + val];
+        if (isDuplicate) {
+            numInput.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-900');
+            numInput.title = "Nomor soal ini sudah terpakai di seri ini.";
+        } else {
+            numInput.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-900');
+            numInput.title = "";
+        }
+    }
+
+    /**
+     * Membuat ID Himpunan Latihan otomatis (LAT-YYMMDD-HHMMSS)
+     */
+    function generateLatihanID() {
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        return `LAT-${yy}${mm}${dd}-${hh}${min}${ss}`;
+    }
+
+    // Jalankan sinkronisasi saat halaman dimuat
+    window.addEventListener('DOMContentLoaded', refreshLatihanMetadata);
+
+    function switchNav(target) {
+        const sections = ['input', 'vocab', 'preview', 'history'];
+        sections.forEach(s => {
+            document.getElementById(`section-${s}`).classList.add('hidden');
+            const btn = document.getElementById(`nav-btn-${s}`);
+            btn.className = "active-tap flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 flex-shrink-0";
+        });
+
+        document.getElementById(`section-${target}`).classList.remove('hidden');
+        document.getElementById(`nav-btn-${target}`).className = "active-tap flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white text-violet-700 shadow-xs flex-shrink-0";
+
+        if (target === 'vocab') renderAutoSuggestVocab();
+        if (target === 'preview') renderLatihanPreview();
+        if (target === 'history') renderHistoryTable();
+    }
+
+    /**
+     * Menghapus semua soal yang belum tuntas dipetakan (Bulk Delete)
+     */
+    async function deleteIncompleteBulk() {
+        const incompleteItems = dbPustakaLatihan.filter(item => isQuestionIncomplete(item.Teks_Soal));
+        if (incompleteItems.length === 0) {
+            alert("Tidak ada soal yang belum tuntas.");
+            return;
+        }
+
+        if (!confirm(`Apakah Anda yakin ingin menghapus ${incompleteItems.length} soal yang belum tuntas dipetakan? Tindakan ini tidak dapat dibatalkan.`)) {
+            return;
+        }
+
+        const targets = incompleteItems.map(item => ({
+            idHimpunan: item.ID_Himpunan_Latihan,
+            nomorSoal: item.Nomor_Soal
+        }));
+
+        try {
+            const response = await apiCall({
+                action: "deleteMultipleLatihan",
+                targets: targets
+            });
+
+            if (response.success) {
+                alert(response.message);
+                await refreshLatihanMetadata();
+            } else {
+                alert("Gagal menghapus: " + (response.error || "Kesalahan server"));
+            }
+        } catch (err) {
+            console.error("Bulk delete error:", err);
+            alert("Gagal menghubungi server untuk menghapus data.");
+        }
+    }
+
+    function konfirmasiHapus(id, n) {
+        deleteTarget = { idHimpunan: id, nomorSoal: n };
+        document.getElementById('delete-text').innerText = `Apakah Anda yakin ingin menghapus soal nomor ${n} pada seri "${id}"? Tindakan ini tidak dapat dibatalkan.`;
+        document.getElementById('modal-delete').classList.remove('hidden');
+    }
+
+    async function executeDeleteLatihan() {
+        if (!deleteTarget.idHimpunan) return;
+        
+        try {
+            const response = await apiCall({
+                action: "deleteLatihan",
+                idHimpunan: deleteTarget.idHimpunan,
+                nomorSoal: deleteTarget.nomorSoal
+            });
+
+            if (response.success) {
+                alert(response.message);
+                closeModal();
+                // Segarkan data setelah penghapusan
+                await refreshLatihanMetadata();
+            } else {
+                alert("Gagal menghapus: " + (response.error || "Kesalahan server"));
+            }
+        } catch (err) {
+            console.error("Delete error:", err);
+            alert("Gagal menghubungi server untuk menghapus data.");
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('modal-delete').classList.add('hidden');
+        deleteTarget = { idHimpunan: null, nomorSoal: null };
+    }
+
+    /**
+     * Fungsi pembantu untuk komunikasi POST ke GAS
+     */
+    async function apiCall(payload, retries = 3, delay = 1000) {
+        const apiUrl = localStorage.getItem("membaca_api_url");
+        if (!apiUrl) throw new Error("Endpoint API belum siap.");
+
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain' }, 
+                    body: JSON.stringify(payload)
+                });
+                return await response.json();
+            } catch (error) {
+                if (attempt === retries) throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2; 
+            }
+        }
+    }
+
+    async function simpanLatihan() {
+        const nameInput = document.getElementById('Nama_Seri').value.trim();
+        const nomorSoal = document.getElementById('Nomor_Soal').value;
+        const correctLetter = document.getElementById('jawaban_benar').value;
+        let idHimpunan = document.getElementById('ID_Himpunan_Latihan_Hidden').value;
+
+        if (!nameInput || !nomorSoal) {
+            alert("Nama Seri dan Nomor Soal wajib diisi!");
+            return;
+        }
+
+        // VALIDASI JAWABAN BENAR: Pastikan pilihan yang dipilih memiliki teks (Arab & Indo)
+        const arChoiceText = document.getElementById(`opt_${correctLetter.toLowerCase()}_ar`).value.trim();
+        const idChoiceText = document.getElementById(`opt_${correctLetter.toLowerCase()}_id`).value.trim();
+
+        if (!arChoiceText || !idChoiceText) {
+            alert(`Pilihan ${correctLetter} disetel sebagai jawaban benar, namun teks Arab atau Indonesia untuk pilihan tersebut masih kosong!`);
+            return;
+        }
+
+        // VALIDASI DUPLIKAT: Cek apakah nomor soal sudah ada di seri terpilih
+        if (idHimpunan) {
+            const seriesData = dbJudulHimpunan.find(item => item.ID_Himpunan_Latihan === idHimpunan);
+            if (seriesData && seriesData["ID_Soal_" + nomorSoal]) {
+                alert(`Gagal: Nomor soal ${nomorSoal} sudah ada di dalam seri "${nameInput}". Silakan gunakan nomor soal lain.`);
+                return;
+            }
+        } else {
+            // Generate ID Otomatis untuk seri baru
+            idHimpunan = generateLatihanID();
+        }
+
+        const payload = {
+            action: "saveLatihan",
+            data: {
+                ID_Himpunan_Latihan: idHimpunan,
+                Judul_Himpunan_Latihan: nameInput,
+                Nomor_Soal: nomorSoal,
+                Teks_Soal: document.getElementById('soal_arab').value + "\n---\n" + document.getElementById('soal_id').value,
+                Pilihan_A: document.getElementById('opt_a_ar').value + "\n---\n" + document.getElementById('opt_a_id').value,
+                Pilihan_B: document.getElementById('opt_b_ar').value + "\n---\n" + document.getElementById('opt_b_id').value,
+                Pilihan_C: document.getElementById('opt_c_ar').value + "\n---\n" + document.getElementById('opt_c_id').value,
+                Pilihan_D: document.getElementById('opt_d_ar').value + "\n---\n" + document.getElementById('opt_d_id').value,
+                Pilihan_E: document.getElementById('opt_e_ar').value + "\n---\n" + document.getElementById('opt_e_id').value,
+                Jawaban_Benar: document.getElementById('jawaban_benar').value,
+                Feedback_Jawaban_Benar: document.getElementById('feedback_benar').value,
+                Feedback_Jawaban_Salah: "" // Dapat ditambahkan field di UI jika diperlukan nanti
+            }
+        };
+
+        if(!payload.data.ID_Himpunan_Latihan || !payload.data.Nomor_Soal) {
+            alert("ID Himpunan dan Nomor Soal wajib diisi!");
+            return;
+        }
+
+        try {
+            // Menggunakan apiCall dari js/api.js yang sudah terintegrasi
+            const response = await apiCall(payload);
+            if (response.status === "success") {
+                alert(`Berhasil disimpan! ID Soal: ${response.result.id_no_soal}\nTotal soal dalam seri ini: ${response.result.total_soal}`);
+                
+                resetLatihanForm();
+                // Refresh metadata agar auto-fill sinkron untuk soal berikutnya
+                await refreshLatihanMetadata();
+                handleSeriesInput();
+            } else {
+                alert("Gagal menyimpan: " + (response.message || "Terjadi kesalahan server"));
+            }
+        } catch (error) {
+            console.error("Gagal simpan latihan:", error);
+            alert("Gagal terhubung ke server. Periksa koneksi API Anda.");
+        }
+    }
+ </script>
+
+</body>
+</html>

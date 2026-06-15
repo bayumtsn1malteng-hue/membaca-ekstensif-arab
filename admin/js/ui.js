@@ -51,9 +51,11 @@ function renderLiveArabicFeedback() {
   container.innerHTML = "";
 
   rawWords.forEach(word => {
-    const cleaned = cleanArabicDiacritics(word);
-    const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === cleaned);
-    const directIndukMatch = dbKataInduk.find(i => i.Kata_Induk_Polos === cleaned);
+    // Gunakan normalizeArabic (bukan cleanArabicDiacritics) agar konsisten dengan sisi User
+    // normalizeArabic menangani variasi Alif (أ/إ/آ → ا) dan Tatweel
+    const cleaned = normalizeArabic(word);
+    const vocabMatch = dbPetaKosakata.find(v => normalizeArabic(v.Kata_Teks_Polos) === cleaned);
+    const directIndukMatch = dbKataInduk.find(i => normalizeArabic(i.Kata_Induk_Polos) === cleaned);
     
     let textColorClass = "text-slate-900 bg-white border border-slate-200 hover:bg-slate-100"; 
     let titleTooltip = "Belum terpetakan (Kosakata Baru)";
@@ -527,7 +529,8 @@ function renderUserReader() {
   const rawWords = stateActiveText.Konten_Arab.trim().replace(/\s+/g, ' ').split(' ');
 
   rawWords.forEach(word => {
-    const cleaned = cleanArabicDiacritics(word);
+    // Gunakan normalizeArabic agar konsisten dengan pencarian sisi User
+    const cleaned = normalizeArabic(word);
     const span = document.createElement("span");
     span.className = "active-tap text-slate-800 hover:text-indigo-600 hover:bg-indigo-50/50 py-1.5 px-3 rounded-xl transition-all duration-150 cursor-pointer text-xl sm:text-2xl font-arabic";
     span.innerText = word;
@@ -544,8 +547,11 @@ function renderUserReader() {
  * Membuka lembar detail kosakata instan dari sudut pandang pembaca User (Pratinjau)
  */
 function openUserWordModal(raw, clean) {
-  const vocabMatch = dbPetaKosakata.find(v => v.Kata_Teks_Polos === clean);
-  const directInduk = dbKataInduk.find(i => i.Kata_Induk_Polos === clean);
+  // 'clean' sudah merupakan hasil normalizeArabic dari pemanggil
+  // Gunakan normalizeArabic juga di sisi database agar pencocokan akurat
+  const vocabMatch = dbPetaKosakata.find(v => normalizeArabic(v.Kata_Teks_Polos) === clean);
+  const directInduk = dbKataInduk.find(i => normalizeArabic(i.Kata_Induk_Polos) === clean);
+
 
   document.getElementById("user-modal-kata-teks").innerText = raw;
   document.getElementById("user-modal-arti-teks").innerText = "Arti kata belum dipetakan admin.";

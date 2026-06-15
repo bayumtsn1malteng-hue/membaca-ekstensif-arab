@@ -1,0 +1,39 @@
+Bagaimana cara mengintegrasikan shared/arabic_utils.js ke dalam panel admin agar tidak terjadi duplikasi fungsi normalisasi?
+
+Sekarang setelah JavaScript dipecah, bagaimana cara mengimplementasikan ES6 modules (import/export) untuk struktur yang lebih bersih dan terisolasi?
+
+Apa saja perubahan yang perlu dilakukan pada admin/index.html agar bisa menggunakan shared/ui_utils.js?
+
+Bagaimana cara memperbarui file admin/js/api.js agar menggunakan shared/api_base.js yang baru saja dibuat?
+
+Bagaimana cara membuat grafik kemajuan belajar sederhana di dashboard menggunakan data Leitner Box?
+
+Tambahkan debouncing pada fungsi searchLibrary agar pencarian lebih efisien saat pengguna mengetik cepat.
+
+Berikan cara melakukan debugging di browser console untuk melihat urutan error yang muncul saat inisialisasi aplikasi.
+
+Build an application to do [goal] with a UI that lets the user do [task] in the [environment].
+
+Tambahkan fitur validasi di latihan.html agar tombol simpan hanya aktif jika minimal 4 pilihan jawaban (A-D) sudah terisi baik Arab maupun Indonesia.
+
+Tambahkan fungsi validasi di backendAdminUji.js untuk memastikan ID_Himpunan_Latihan tidak duplikat saat membuat himpunan baru.
+
+Tambahkan logika pada tab Pratinjau di latihan.html untuk menampilkan tanda centang pada pilihan yang diset sebagai jawaban benar.
+
+-----
+
+
+
+
+
+
+
+Buatkan fitur "Filter Berdasarkan Status" (SLATE/AMBER/PETA) pada modal Analisis Kosakata untuk memudahkan fokus pemetaan.
+
+Tambahkan fitur grafik batang sederhana di modal Analisis Kata Terpopuler untuk membandingkan frekuensi 5 kata teratas.
+
+--
+```
+Dari Bayu
+Ubah agar analisis kata terpopuler menghitung dan mengembalikan daftar Kata_Induk_Polos terpopuler dari seluruh soal di Pustaka_Latihan.  Namun Saran Prioritas Pemetaan (Populer & Belum Tuntas) tetap mengembalikan Kata_Teks_Polos
+```
