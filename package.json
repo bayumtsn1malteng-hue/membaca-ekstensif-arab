@@ -1,0 +1,17 @@
+{
+  "name": "meb-arab",
+  "version": "0.9.0",
+  "description": "Membaca Ekstensif Bertingkat (MEB) Arab",
+  "scripts": {
+    "sync-sw": "node bump-sw.js",
+    "build:css": "tailwindcss -i ./css/input.css -o ./css/style.css --minify && npm run sync-sw",
+    "watch:css": "tailwindcss -i ./css/input.css -o ./css/style.css --watch",
+    "postinstall": "node copy-libs.js"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  },
+  "dependencies": {
+    "dexie": "^4.0.11"
+  }
+}

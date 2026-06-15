@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Local Font Definitions */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('../fonts/plus-jakarta-sans.woff2') format('woff2');
+  font-weight: 300 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('../fonts/noto-sans-arabic.woff2') format('woff2');
+  font-weight: 300 700;
+  font-display: swap;
+}

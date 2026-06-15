@@ -1,6 +1,6 @@
 /**
  * MODUL UTAMA APLIKASI USER (USER APP MODULE)
- * Versi: v0.8.8-alpha (Fix Duplicate Exports)
+ * Versi: v0.9.0-alpha (Minimalist & Enhanced Exercise)
  * ID Unik: MEB-USER-APP-001
  *
  * Modul ini mengelola:
@@ -18,10 +18,10 @@
  *   3. js/user_ui.js           → switchView, renderLibrary, updateDashboardStats, dll.
  */ // Removed getVocalizedWord from here, as it's now in user_ui.js
 
-import Dexie from 'https://unpkg.com/dexie/dist/dexie.mjs';
+import Dexie from './dexie.mjs';
 
 import { apiCall, pullSystemDataFromServer, pullUserKamusFromServer, fetchExerciseData, fetchExerciseScoreHistory } from './user_api.js';
-import { switchView, renderLibrary, updateDashboardStats, setupUserInterface, showModal, showSpinnerButton, toggleDarkMode, renderKamusTable, loadReader, showDictModal, hideDictModal, buildDynamicModeBLayout, loadLeitnerCard, revealLeitnerCard, closeLeitnerSession, filterKamusByBox, toggleAuthMode, filterLibrary, _searchLibrary, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, closeModal } from './user_ui.js';
+import { switchView, renderLibrary, updateDashboardStats, setupUserInterface, showModal, showSpinnerButton, toggleDarkMode, renderKamusTable, loadReader, showDictModal, hideDictModal, buildDynamicModeBLayout, loadLeitnerCard, revealLeitnerCard, closeLeitnerSession, filterKamusByBox, toggleAuthMode, filterLibrary, searchLibrary, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, closeModal, toggleMinimalistMode } from './user_ui.js';
 import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
 // Import modul lain jika sudah dipisah (Contoh: import { setupUserInterface } from './user_ui.js';)
 
@@ -36,13 +36,14 @@ const isModule = true;
 // ============================================================
 
 export const db = new Dexie("MEB_UserDB");
-db.version(1).stores({
+db.version(2).stores({
   pustaka: "ID_Teks, Seri, Tingkat_Kesulitan, Judul_Teks, Judul_Teks_Arab",
   petaKosakata: "ID_Kosakata, ID_Teks, Kata_Teks_Polos, ID_Kata_Induk",
   kamusUser: "ID_User_Word, ID_User, Kata_Polos, ID_Kata_Induk, Status_Belajar, Tanggal_Update",
   kataInduk: "ID_Kata_Induk, Kata_Induk_Polos",
   sambungan: "ID_Sambungan, Bentuk_Sambungan",
-  appLogs: "++id, eventType, timestamp"
+  appLogs: "++id, eventType, timestamp",
+  bookmarks: "id, setId"
 });
 
 let appState = {
@@ -63,6 +64,10 @@ let appState = {
   leitnerSessionWords: [],
   leitnerSessionIndex: 0,
   leitnerReviewResults: [], // Array to store results for bulk submission
+  leitnerFilter: {
+    source: 'all', // all, reading, exercise
+    specificId: 'all'
+  },
   exerciseScoreHistory: [], // Riwayat skor latihan untuk himpunan aktif
   // --- Ekstensi Fitur Latihan Soal ---
   currentExerciseType: 'multiple_choice', // Jenis latihan aktif
@@ -70,9 +75,10 @@ let appState = {
   currentQuestionIndex: 0,                // Indeks soal saat ini dalam himpunan
   judulHimpunanLatihan: [],               // Daftar metadata himpunan latihan
   currentQuestionData: null,              // Objek data soal yang sedang aktif
-  exerciseMode: 'read',                   // Mode aktif: 'read' (eksplorasi) atau 'challenge' (jawab)
+  exerciseMode: 'read',                   // Mode aktif: 'read', 'practice', 'challenge', 'bookmark_review'
   exerciseQuestions: [],                  // Array berisi seluruh soal dalam satu himpunan
-  userAnswers: []                         // Rekaman jawaban pengguna di Mode Tantangan
+  userAnswers: [],                        // Rekaman jawaban pengguna di Mode Tantangan
+  bookmarkedQuestions: JSON.parse(localStorage.getItem('meb_bookmarks') || '[]') // Daftar objek soal yang ditandai
 };
 
 // Proxy debugging untuk memantau perubahan appState di Console
@@ -109,18 +115,20 @@ export async function migrateFromLocalStorage() {
  */
 export async function hydrateAppStateFromDB() {
   console.log("[DB] Memulai hidrasi state dari IndexedDB...");
-  const [pustaka, peta, kamus, induk, sambungan] = await Promise.all([
+  const [pustaka, peta, kamus, induk, sambungan, bookmarks] = await Promise.all([
     db.pustaka.toArray(),
     db.petaKosakata.toArray(),
     db.kamusUser.toArray(),
     db.kataInduk.toArray(),
-    db.sambungan.toArray()
+    db.sambungan.toArray(),
+    db.bookmarks.toArray()
   ]);
   appState.pustaka = pustaka;
   appState.petaKosakata = peta;
   appState.kamusUser = kamus;
   appState.kataInduk = induk;
   appState.sambungan = sambungan;
+  appState.bookmarkedQuestions = bookmarks;
   updateDashboardStats(); // Pastikan statistik terupdate setelah hidrasi
 
   checkLeitnerReminders();
@@ -511,7 +519,8 @@ window.exportDatabaseToJson = exportDatabaseToJson;
 window.switchView = switchView;
 window.toggleAuthMode = toggleAuthMode;
 window.filterLibrary = filterLibrary;
-window.searchLibrary = _searchLibrary; // Tetap ekspos fungsi asli untuk kompatibilitas sementara jika ada yang memanggil langsung
+window.searchLibrary = searchLibrary; // Ekspos versi debounced untuk efisiensi di Android Low-End
+window.toggleMinimalistMode = toggleMinimalistMode;
 window.adjustReaderFont = adjustReaderFont;
 window.resetReaderSettings = resetReaderSettings;
 window.adjustReaderLineHeight = adjustReaderLineHeight;
@@ -962,16 +971,39 @@ async function deleteKamusWord(idUserWord) {
  * Memulai sesi review flashcard Leitner
  */
 function startLeitnerSession() {
-  let dueWords = appState.kamusUser.filter(item => item.Status_Belajar !== 'Known');
+  const now = new Date();
+
+  let dueWords = appState.kamusUser.filter(item => {
+    const reviewDate = new Date(item.Tanggal_Review_Berikutnya);
+    const isDue = item.Status_Belajar !== 'Known' && reviewDate <= now;
+    
+    // 1. Filter Sumber: Bacaan (TX-) atau Latihan (VOC-LAT-)
+    let sourceMatch = true;
+    const isFromExercise = item.ID_User_Word.startsWith('VOC-LAT-');
+    
+    if (appState.leitnerFilter.source === 'reading' && isFromExercise) sourceMatch = false;
+    if (appState.leitnerFilter.source === 'exercise' && !isFromExercise) sourceMatch = false;
+
+    // 2. Filter Judul Spesifik
+    let titleMatch = true;
+    if (appState.leitnerFilter.specificId !== 'all') {
+      // Cari relasi di petaKosakata untuk mendapatkan ID_Teks
+      const mapping = appState.petaKosakata.find(m => m.ID_Kata_Induk === item.ID_Kata_Induk);
+      titleMatch = mapping && mapping.ID_Teks === appState.leitnerFilter.specificId;
+    }
+
+    return isDue && sourceMatch && titleMatch;
+  });
 
   if (dueWords.length === 0) {
-    showModal("Latihan Selesai", "Kamus Anda kosong atau semua kosakata Anda telah bertatus 'Known'!", "fa-solid fa-circle-check text-emerald-500");
+    showModal("Review Selesai", "Tidak ada kosakata yang perlu ditinjau hari ini berdasarkan filter Anda.", "fa-solid fa-circle-check text-emerald-500");
     return;
   }
 
   appState.leitnerSessionWords = dueWords;
   appState.leitnerSessionIndex = 0;
 
+  toggleMinimalistMode(true);
   document.getElementById('leitner-modal').classList.remove('hidden');
   loadLeitnerCard();
 }
@@ -984,7 +1016,6 @@ async function submitLeitnerResult(isCorrect) {
   const word = appState.leitnerSessionWords[appState.leitnerSessionIndex];
 
   if (appState.isMockMode) {
-    // Existing mock mode logic
     const itemIndex = appState.kamusUser.findIndex(k => k.ID_User_Word === word.ID_User_Word);
     if (itemIndex !== -1) {
       const current = appState.kamusUser[itemIndex];
@@ -1037,8 +1068,8 @@ async function submitLeitnerResult(isCorrect) {
       const nextReviewDays = reviewIntervals[current.Status_Belajar] || 1; // Default to 1 day if not found
       current.Tanggal_Review_Berikutnya = new Date(Date.now() + nextReviewDays * 24 * 60 * 60 * 1000).toISOString();
       current.Tanggal_Update = new Date().toISOString();
+      await db.kamusUser.put(appState.kamusUser[itemIndex]);
     }
-    await db.kamusUser.put(appState.kamusUser[itemIndex]);
     nextLeitnerCard();
   }
 }
@@ -1077,7 +1108,7 @@ function saveApiEndpoint() {
     document.getElementById('connection-status-tag').textContent = "Mock Data (Offline Mode)";
     document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 uppercase tracking-wide"; //
     document.getElementById('btn-sync-manual').classList.add('hidden'); //
-    userUi.showModal("Mode Offline Diaktifkan", "Endpoint kosong, sistem kembali menggunakan simulasi database browser.", "fa-solid fa-circle-info text-slate-500");
+    showModal("Mode Offline Diaktifkan", "Endpoint kosong, sistem kembali menggunakan simulasi database browser.", "fa-solid fa-circle-info text-slate-500");
   } else if (url.startsWith("https://script.google.com/macros/s/")) { // Lebih spesifik untuk URL Apps Script
     appState.gasEndpoint = url;
     appState.isMockMode = false;

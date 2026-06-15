@@ -36,11 +36,15 @@ export async function apiCall(payload, retries = 5, delay = 1000) {
   }
 }
 
+let isSystemSyncing = false;
+
 /**
  * Menarik data teks bacaan sistem terkini dari Spreadsheet Server
  */
 export async function pullSystemDataFromServer() {
-  if (appState.isMockMode || !appState.gasEndpoint) return;
+  if (isSystemSyncing || appState.isMockMode || !appState.gasEndpoint) return;
+
+  isSystemSyncing = true;
   try {
     const btn = document.getElementById('btn-sync-manual');
     if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i>`;
@@ -70,7 +74,9 @@ export async function pullSystemDataFromServer() {
     }
   } catch (err) {
     console.error("Gagal menarik naskah sistem: ", err);
+    showModal("Sinkronisasi Gagal", "Gagal menarik data naskah dari server.", "fa-solid fa-triangle-exclamation text-amber-500", () => pullSystemDataFromServer());
   } finally {
+    isSystemSyncing = false;
     const btn = document.getElementById('btn-sync-manual');
     if (btn) btn.innerHTML = `<i class="fa-solid fa-arrows-rotate mr-1"></i> Sinkron`;
   }
@@ -119,8 +125,12 @@ export async function fetchExerciseScoreHistory(userId, setId) {
 /**
  * Menarik data kamus pribadi user terkini dari Spreadsheet Server
  */
+let isUserKamusSyncing = false;
+
 export async function pullUserKamusFromServer() {
-  if (appState.isMockMode || !appState.gasEndpoint || !appState.currentUser) return;
+  if (isUserKamusSyncing || appState.isMockMode || !appState.gasEndpoint || !appState.currentUser) return;
+
+  isUserKamusSyncing = true;
   try {
     const res = await apiCall({
       action: "getUserKamus",
@@ -143,10 +153,12 @@ export async function pullUserKamusFromServer() {
       }
     } else {
       console.warn("[Sync] Gagal menarik kamus pribadi:", res.error);
-      showModal("Sinkronisasi Kamus Gagal", res.error || "Server tidak memberikan data kamus.", "fa-solid fa-triangle-exclamation text-amber-500");
+      showModal("Sinkronisasi Kamus Gagal", res.error || "Server tidak memberikan data kamus.", "fa-solid fa-triangle-exclamation text-amber-500", () => pullUserKamusFromServer());
     }
   } catch (err) {
     console.error("Gagal sinkron kamus pribadi: ", err);
-    showModal("Kesalahan Jaringan", "Gagal menghubungi server untuk mengambil kamus pribadi.", "fa-solid fa-wifi text-rose-500");
+    showModal("Kesalahan Jaringan", "Gagal menghubungi server untuk mengambil kamus pribadi.", "fa-solid fa-wifi text-rose-500", () => pullUserKamusFromServer());
+  } finally {
+    isUserKamusSyncing = false;
   }
 }

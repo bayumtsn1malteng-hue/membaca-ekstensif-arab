@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MEB Admin - Latihan Soal</title>
+  <title>MEB Arab - Sesi Latihan v0.9.0</title>
 
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="../manifest.json">
@@ -12,50 +12,31 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            arabic: ['Amiri', 'serif'],
-            arabicSans: ['Noto Sans Arabic', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
-              900: '#115e59',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Chart.js for Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="css/style.css">
   
   <style>
-    /* Spasi baris vertikal ekstra longgar khusus untuk harakat Arab yang sangat padat */
+    :root { --reader-font: 'Noto Sans Arabic', sans-serif; }
+    .font-arabic { font-family: var(--reader-font) !important; }
+    
     .arabic-text {
-      line-height: 2.2;
+      line-height: 2.6;
+      word-spacing: 0.15em;
       direction: rtl;
     }
-    .word-span {
-      padding: 4px 6px;
-      margin: 2px 2px;
-      border-radius: 8px;
-      transition: all 0.2s ease-in-out;
-      cursor: pointer;
+
+    body.minimalist-mode header, 
+    body.minimalist-mode footer { 
+      display: none !important; 
     }
+
     .view-transition {
       transition: all 0.2s ease-in-out;
     }
@@ -83,12 +64,40 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
+
+    /* Animations for Question Transitions */
+    @keyframes slideInRight {
+      from { transform: translateX(30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { transform: translateX(-30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .animate-slide-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .animate-slide-left { animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Focus Mode Enhancement */
+    .focus-active #exercise-question-text,
+    .focus-active #question-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      box-shadow: 0 10px 40px -15px rgba(0,0,0,0.05);
+      transition: all 0.5s ease;
+    }
+    .dark .focus-active #exercise-question-text,
+    .dark .focus-active #question-card {
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(30, 41, 59, 0.5);
+      box-shadow: 0 10px 40px -15px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col view-transition">
 
   <!-- HEADER -->
-  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 h-14 flex items-center justify-between">
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 h-14 flex items-center justify-between transition-all duration-300 ease-in-out">
     <div class="flex items-center gap-2">
       <div class="bg-brand-600 text-white p-1.5 rounded-lg shadow-sm">
         <i class="fa-solid fa-book-open-reader text-xs"></i>
@@ -127,6 +136,19 @@
       </a>
     </div>
   </header>
+
+  <!-- FLOATING FOCUS CONTROLS -->
+  <div id="floating-focus-controls" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 transition-all duration-300 scale-0 opacity-0 pointer-events-none">
+    <button id="focus-prev-btn" onclick="previousQuestion()" class="hidden p-4 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full shadow-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-90">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <button id="exit-focus-btn" onclick="backToSetSelection()" class="p-4 bg-brand-600 text-white rounded-full shadow-2xl hover:bg-brand-700 transition-all flex items-center justify-center active:scale-90">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+    <button id="focus-next-btn" onclick="nextQuestion()" class="hidden p-4 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full shadow-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-90">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
 
   <!-- MAIN CONTENT -->
   <div class="flex-grow flex flex-col min-h-screen">
@@ -169,10 +191,13 @@
           </button>
 
           <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-            <button onclick="setExerciseMode('read')" id="btn-mode-read" class="px-4 py-2 rounded-lg text-xs font-bold transition">Mode Baca</button>
-            <button onclick="setExerciseMode('challenge')" id="btn-mode-challenge" class="px-4 py-2 rounded-lg text-xs font-bold transition">Mode Tantangan</button>
+            <button onclick="setExerciseMode('read')" id="btn-mode-read" class="px-3 py-2 rounded-lg text-[10px] font-bold transition">Mode Baca</button>
+            <button onclick="setExerciseMode('practice')" id="btn-mode-practice" class="px-3 py-2 rounded-lg text-[10px] font-bold transition">Mode Latihan</button>
+            <button onclick="setExerciseMode('bookmark_review')" id="btn-mode-bookmark-review" class="px-3 py-2 rounded-lg text-[10px] font-bold transition">Bookmark</button>
+            <button onclick="setExerciseMode('challenge')" id="btn-mode-challenge" class="px-3 py-2 rounded-lg text-[10px] font-bold transition">Tantangan</button>
           </div>
           <div class="flex items-center gap-3">
+            <div id="challenge-timer-display" class="hidden px-4 py-2 bg-rose-50 dark:bg-rose-950 text-rose-600 font-mono font-bold text-sm rounded-xl border border-rose-200">00:00</div>
             <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700">
               <button onclick="adjustReaderFont(-1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-500"><i class="fa-solid fa-minus text-[10px]"></i></button>
               <button onclick="resetReaderSettings()" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-400"><i class="fa-solid fa-rotate-left text-[10px]"></i></button>
@@ -204,9 +229,14 @@
 
 
         <!-- Question Card -->
-        <div id="question-card" class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm space-y-8">
+        <div id="question-card" class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm space-y-8 relative overflow-hidden">
+          <!-- Bookmark Button -->
+          <button onclick="toggleBookmark()" id="btn-bookmark" class="absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-amber-500 transition-all z-10 border border-slate-100 dark:border-slate-700">
+            <i class="fa-regular fa-bookmark text-sm"></i>
+          </button>
+
           <!-- Teks Soal (Arabic) -->
-          <div id="exercise-question-text" class="arabic-text text-3xl sm:text-4xl text-right leading-loose min-h-[100px]">
+          <div id="exercise-question-text" class="arabic-text text-3xl sm:text-4xl text-right leading-loose min-h-[100px] pt-4">
             <!-- Rendered question text here -->
           </div>
 
@@ -252,7 +282,10 @@
           <h3 class="text-base font-bold" id="modal-title">Operasi Sukses</h3>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="modal-message">Pesan notifikasi.</p>
         </div>
-        <button onclick="closeModal()" class="w-full mt-5 py-3 bg-slate-900 dark:bg-slate-850 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
+        <div class="flex gap-3 mt-5">
+          <button id="modal-close-btn" onclick="closeModal()" class="w-full py-3 bg-slate-900 dark:bg-slate-850 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
+          <button id="modal-retry-btn" class="hidden w-1/2 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition">Coba Lagi</button>
+        </div>
       </div>
     </div>
 
@@ -330,6 +363,34 @@
       </div>
     </div>
 
+    <!-- MODAL: HASIL LATIHAN (SUMMARY) -->
+    <div id="exercise-summary-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] max-w-md w-full p-8 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-6 text-center animate-[fadeIn_0.3s_ease-out_1]">
+        <div class="space-y-2">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Hasil Latihan</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400" id="summary-set-title">Nama Himpunan Latihan</p>
+        </div>
+
+        <!-- Pie Chart Canvas -->
+        <div class="relative w-48 h-48 mx-auto">
+          <canvas id="resultPieChart"></canvas>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 py-4">
+          <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-100 dark:border-emerald-900/50">
+            <span class="block text-[10px] font-bold text-emerald-600 uppercase">Benar</span>
+            <span class="text-xl font-black text-emerald-700 dark:text-emerald-400" id="summary-correct">0</span>
+          </div>
+          <div class="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/50">
+            <span class="block text-[10px] font-bold text-rose-600 uppercase">Salah</span>
+            <span class="text-xl font-black text-rose-700 dark:text-rose-400" id="summary-wrong">0</span>
+          </div>
+        </div>
+
+        <button onclick="backToSetSelection(); document.getElementById('exercise-summary-modal').classList.add('hidden');" class="w-full py-3.5 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-lg">Kembali ke Menu</button>
+      </div>
+    </div>
+
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-[11px] text-slate-50">
       <p>© 2026 Membaca Ekstensif Bertingkat (MEB). Admin Panel.</p>
@@ -367,8 +428,8 @@
 
   <!-- Main Application Logic -->
   <script type="module">
-    import { appState, loadMockData } from './js/user_app.js'; // Import loadMockData
-    import { switchView, showModal, closeModal, showSpinnerButton, toggleDarkMode, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, renderInteractiveArabicText, hideDictModal } from './js/user_ui.js'; // Import hideDictModal
+    import { appState, loadMockData } from './js/user_app.js';
+    import { switchView, showModal, closeModal, showSpinnerButton, toggleDarkMode, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, renderInteractiveArabicText, hideDictModal, toggleBookmark as toggleBookmarkUI, updateBookmarkUI } from './js/user_ui.js';
     import { apiCall, fetchExerciseData, fetchExerciseScoreHistory, pullSystemDataFromServer } from './js/user_api.js';
 
 
@@ -411,6 +472,36 @@
      */
     async function startExercise(setId) {
       if (!setId) return;
+      
+      let isResuming = false;
+      // Cek Resume Data
+      const saved = localStorage.getItem('meb_exercise_resume');
+      if (saved) {
+        const resumeData = JSON.parse(saved);
+        // Only resume if not explicitly starting a bookmark review mode from index.html
+        const urlParams = new URLSearchParams(window.location.search);
+        const modeParam = urlParams.get('mode');
+        if (resumeData.setId === setId && modeParam !== 'bookmark_review' && !urlParams.get('questionId')) {
+          if (confirm("Ditemukan kemajuan latihan sebelumnya. Lanjutkan dari soal terakhir?")) {
+            appState.currentQuestionIndex = resumeData.index;
+            appState.userAnswers = resumeData.answers;
+            appState.exerciseMode = resumeData.mode;
+            isResuming = true;
+          } else {
+            clearExerciseProgress();
+          }
+        }
+      }
+
+      // Handle direct link to bookmark review
+      const urlParams = new URLSearchParams(window.location.search);
+      const modeParam = urlParams.get('mode');
+      const questionIdParam = urlParams.get('questionId');
+      if (modeParam === 'bookmark_review') {
+        appState.exerciseMode = 'bookmark_review';
+      }
+
+      window.toggleMinimalistMode(true); // Masuk ke mode fokus
       appState.currentExerciseSetId = setId;
       
       // Sembunyikan pemilihan set, tampilkan area latihan
@@ -424,11 +515,31 @@
         const res = await fetchExerciseData(setId);
         closeModal();
         
-        if (res && (res.success || res.status === "success") && res.data) {
+        if (res && (res.success || res.status === "success" || res.data)) {
           appState.exerciseQuestions = res.data;
-          appState.userAnswers = new Array(appState.exerciseQuestions.length).fill(null);
-          appState.currentQuestionIndex = 0;
-          setExerciseMode('read'); //
+          
+          // Jika dalam mode review bookmark, saring soalnya
+          if (appState.exerciseMode === 'bookmark_review') {
+            const bookmarkedIds = appState.bookmarkedQuestions.map(b => b.id);
+            const filteredQuestions = res.data.filter(q => bookmarkedIds.includes(q.ID_No_Soal));
+            
+            if (filteredQuestions.length === 0) {
+              showModal("Bookmark Kosong", "Tidak ada soal yang ditandai sebagai sulit dalam himpunan ini.", "fa-solid fa-circle-info text-amber-500");
+              backToSetSelection();
+              return;
+            }
+            
+            appState.exerciseQuestions = filteredQuestions;
+            const initialIndex = questionIdParam ? appState.exerciseQuestions.findIndex(q => q.ID_No_Soal === questionIdParam) : -1;
+            appState.currentQuestionIndex = initialIndex !== -1 ? initialIndex : 0;
+          } else {
+            appState.currentQuestionIndex = 0;
+          }
+
+          if (!isResuming) {
+            appState.userAnswers = new Array(appState.exerciseQuestions.length).fill(null);
+          }
+          setExerciseMode(appState.exerciseMode || 'read');
 
           // Ambil riwayat skor setelah soal dimuat
           if (appState.currentUser && !appState.isMockMode) { //
@@ -466,12 +577,25 @@
      */
     function backToSetSelection() {
       // Sembunyikan area latihan, tampilkan pemilihan set
+      window.toggleMinimalistMode(false); // Keluar dari mode fokus
+      clearExerciseProgress();
+      stopChallengeTimer();
       document.getElementById('multiple-choice-exercise-section').classList.add('hidden');
       document.getElementById('set-selection-section').classList.remove('hidden');
       document.getElementById('score-history-section').classList.add('hidden'); // Sembunyikan riwayat saat kembali
       
-      // Reset state latihan di appState
+      // Reset state untuk mencegah memory leak
       appState.currentExerciseSetId = null;
+      appState.exerciseQuestions = [];
+      appState.userAnswers = [];
+      appState.currentQuestionData = null;
+      appState.currentQuestionIndex = 0;
+
+      // Hancurkan chart untuk membebaskan memory
+      if (typeof resultChart !== 'undefined' && resultChart) {
+        resultChart.destroy();
+        resultChart = null;
+      }
     }
 
       /**
@@ -601,19 +725,105 @@
       setExerciseMode('read');
     }
 
+    /**
+     * Menangani toggle bookmark untuk soal aktif
+     */
+    function toggleBookmark() {
+      toggleBookmarkUI(appState.currentQuestionData);
+    }
+
+    /**
+     * Menyimpan kemajuan sesi ke LocalStorage untuk resume
+     */
+    function saveExerciseProgress() {
+      if (!appState.currentExerciseSetId || appState.exerciseMode === 'read') return;
+      const progress = {
+        setId: appState.currentExerciseSetId,
+        index: appState.currentQuestionIndex,
+        answers: appState.userAnswers,
+        mode: appState.exerciseMode,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('meb_exercise_resume', JSON.stringify(progress));
+    }
+
+    /**
+     * Menghapus kemajuan setelah selesai
+     */
+    function clearExerciseProgress() {
+      localStorage.removeItem('meb_exercise_resume');
+    }
+
+    let challengeTimerInterval = null;
+
+    function startChallengeTimer(seconds) {
+      stopChallengeTimer();
+      const endTime = Date.now() + (seconds * 1000);
+      const display = document.getElementById('challenge-timer-display');
+      display.classList.remove('hidden');
+
+      const updateUI = () => {
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        return timeLeft;
+      };
+
+      const timeLeftAtStart = updateUI();
+      challengeTimerInterval = setInterval(() => {
+        const timeLeft = updateUI();
+        if (timeLeft <= 0) {
+          stopChallengeTimer();
+          showModal("Waktu Habis!", "Sesi tantangan berakhir secara otomatis karena batas waktu.", "fa-solid fa-hourglass-end text-rose-500");
+          submitExerciseResults();
+        }
+      }, 1000);
+    }
+
+    function stopChallengeTimer() {
+      if (challengeTimerInterval) {
+        clearInterval(challengeTimerInterval);
+        challengeTimerInterval = null;
+      }
+      const display = document.getElementById('challenge-timer-display');
+      if (display) display.classList.add('hidden');
+    }
+
     function setExerciseMode(mode) { // Exported for external use
       appState.exerciseMode = mode;
-      const btnRead = document.getElementById('btn-mode-read');
-      const btnChallenge = document.getElementById('btn-mode-challenge');
-      if (mode === 'read') {
-        btnRead.className = "px-4 py-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-brand-600 shadow-sm transition";
-        btnChallenge.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition";
-      } else {
-        btnChallenge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-brand-600 shadow-sm transition";
-        btnRead.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition";
+      
+      const modes = {
+        read: document.getElementById('btn-mode-read'),
+        practice: document.getElementById('btn-mode-practice'),
+        challenge: document.getElementById('btn-mode-challenge'),
+        bookmark_review: document.getElementById('btn-mode-bookmark-review')
+      };
+
+      Object.entries(modes).forEach(([key, btn]) => {
+        if (!btn) return;
+        btn.className = (key === mode) 
+          ? "px-3 py-2 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-700 text-brand-600 shadow-sm transition"
+          : "px-3 py-2 rounded-lg text-[10px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition";
+      });
+
+      // Timer Logic
+      stopChallengeTimer();
+      if (mode === 'challenge') {
+        const isTimed = confirm("Gunakan batas waktu untuk tantangan ini?");
+        if (isTimed) {
+          const minutes = prompt("Masukkan durasi (menit):", "5");
+          if (minutes && !isNaN(minutes)) {
+            startChallengeTimer(parseInt(minutes) * 60);
+          }
+        }
       }
+
       renderQuestion();
     }
+
+    let lastDirection = 'next';
 
     function renderQuestion() { // Exported for external use
       if (!appState.exerciseQuestions || appState.exerciseQuestions.length === 0) return;
@@ -623,6 +833,14 @@
 
       document.getElementById('question-counter').textContent = `Soal ${appState.currentQuestionIndex + 1} dari ${appState.exerciseQuestions.length}`;
       document.getElementById('btn-prev-q').disabled = appState.currentQuestionIndex === 0;
+
+      // Apply Transition Animation
+      const card = document.getElementById('question-card');
+      card.classList.remove('animate-slide-right', 'animate-slide-left');
+      void card.offsetWidth; // Trigger reflow
+      card.classList.add(lastDirection === 'next' ? 'animate-slide-right' : 'animate-slide-left');
+
+      updateBookmarkUI();
       
       const btnNext = document.getElementById('btn-next-q');
       const btnFinish = document.getElementById('btn-finish-exercise');
@@ -630,19 +848,31 @@
       const isLastQuestion = appState.currentQuestionIndex === appState.exerciseQuestions.length - 1;
       //
       // Logika tampilan tombol Selesai vs Navigasi Berikutnya //
-      if (isLastQuestion && appState.exerciseMode === 'challenge') {
+      if (isLastQuestion) {
         btnNext.classList.add('hidden');
-        btnFinish.classList.remove('hidden');
-
-        // Fitur Validasi: Hanya aktif jika semua soal telah dijawab
-        btnFinish.disabled = !allAnswered;
-        btnFinish.classList.toggle('opacity-50', !allAnswered);
-        btnFinish.classList.toggle('cursor-not-allowed', !allAnswered);
-        btnFinish.classList.toggle('animate-pulse', allAnswered);
+        
+        if (appState.exerciseMode === 'challenge') {
+          btnFinish.classList.remove('hidden');
+          // Mode Tantangan: Wajib jawab semua
+          btnFinish.disabled = !allAnswered;
+          btnFinish.classList.toggle('opacity-50', !allAnswered);
+          btnFinish.classList.toggle('cursor-not-allowed', !allAnswered);
+          btnFinish.classList.toggle('animate-pulse', allAnswered);
+        } else if (appState.exerciseMode === 'practice' || appState.exerciseMode === 'bookmark_review') {
+          btnFinish.classList.remove('hidden');
+          // Mode Latihan/Review: Boleh selesai kapan saja di akhir
+          btnFinish.disabled = false;
+          btnFinish.classList.remove('opacity-50', 'cursor-not-allowed');
+          btnFinish.classList.add('animate-pulse');
+        } else {
+          btnFinish.classList.add('hidden');
+          btnNext.classList.remove('hidden');
+          btnNext.disabled = true;
+        }
       } else {
         btnNext.classList.remove('hidden');
         btnFinish.classList.add('hidden');
-        btnNext.disabled = isLastQuestion;
+        btnNext.disabled = false;
       }
 
       // Update Progress Bar
@@ -667,7 +897,8 @@
 
       // Feedback Area
       const feedbackArea = document.getElementById('feedback-area');
-      if (appState.exerciseMode === 'challenge' && userAnswer) {
+      // Feedback hanya muncul di Mode Latihan (Practice) jika sudah dijawab
+      if ((appState.exerciseMode === 'practice' || appState.exerciseMode === 'bookmark_review' || appState.exerciseMode === 'challenge') && userAnswer) {
         feedbackArea.classList.remove('hidden'); //
         const isCorrect = userAnswer === data.Jawaban_Benar; //
         feedbackArea.className = isCorrect 
@@ -695,7 +926,7 @@
         let labelClasses = "w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition shrink-0 ";
 
         // Styling berdasarkan apakah sudah dijawab
-        if (appState.exerciseMode === 'challenge' && userAnswer) {
+        if ((appState.exerciseMode === 'challenge' || appState.exerciseMode === 'practice' || appState.exerciseMode === 'bookmark_review') && userAnswer) {
           if (char === data.Jawaban_Benar) {
             btnClasses += "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800";
             labelClasses += "bg-emerald-600 text-white";
@@ -723,41 +954,83 @@
         btn.appendChild(content);
         optionsContainer.appendChild(btn);
         
-        if (appState.exerciseMode === 'read') {
+        if (appState.exerciseMode === 'read' || ((appState.exerciseMode === 'practice' || appState.exerciseMode === 'bookmark_review') && !userAnswer)) {
           renderInteractiveArabicText(optionText, content.id);
         } else {
           content.textContent = optionText;
           content.className += " font-arabic text-xl text-slate-800 dark:text-slate-200";
-          if (!userAnswer) btn.onclick = () => handleAnswerSelection(char);
         }
+        if (!userAnswer && appState.exerciseMode !== 'read') btn.onclick = () => handleAnswerSelection(char);
       });
     }
     // Exported for external use
     function handleAnswerSelection(char) {
-      if (appState.exerciseMode !== 'challenge' || appState.userAnswers[appState.currentQuestionIndex]) return;
+      if (appState.exerciseMode === 'read' || appState.userAnswers[appState.currentQuestionIndex]) return;
+      
       appState.userAnswers[appState.currentQuestionIndex] = char;
+      saveExerciseProgress();
       renderQuestion();
       
       // Pindah otomatis ke soal berikutnya setelah jeda singkat jika bukan soal terakhir
       if (appState.currentQuestionIndex < appState.exerciseQuestions.length - 1) {
-        setTimeout(() => {
-          nextQuestion();
-        }, 1200);
+        // Pindah otomatis hanya di Mode Latihan (bukan Tantangan)
+        if (appState.exerciseMode === 'practice') {
+          setTimeout(() => {
+            nextQuestion();
+          }, 1200);
+        }
       }
     }
 
     function nextQuestion() { // Exported for external use
       if (appState.currentQuestionIndex < appState.exerciseQuestions.length - 1) {
+        lastDirection = 'next';
         appState.currentQuestionIndex++;
         renderQuestion();
+      saveExerciseProgress();
       }
     }
 
     function previousQuestion() { // Exported for external use
       if (appState.currentQuestionIndex > 0) {
+        lastDirection = 'prev';
         appState.currentQuestionIndex--;
         renderQuestion();
+        saveExerciseProgress();
       }
+    }
+
+    let resultChart = null;
+    function showVisualSummary(correct, total) {
+      const wrong = total - correct;
+      document.getElementById('summary-correct').textContent = correct;
+      document.getElementById('summary-wrong').textContent = wrong;
+      document.getElementById('summary-set-title').textContent = appState.exerciseQuestions[0].Judul_Himpunan_Latihan;
+      
+      const ctx = document.getElementById('resultPieChart').getContext('2d');
+      
+      if (resultChart) resultChart.destroy();
+      
+      resultChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Benar', 'Salah'],
+          datasets: [{
+            data: [correct, wrong],
+            backgroundColor: ['#10b981', '#f43f5e'],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+
+      document.getElementById('exercise-summary-modal').classList.remove('hidden');
     }
 
     async function submitExerciseResults() {
@@ -767,13 +1040,14 @@
       }
 
       // Cek apakah dalam mode Mock/Offline agar tidak muncul error koneksi
-      if (appState.isMockMode) {
-        const totalQuestions = appState.exerciseQuestions.length;
-        const totalCorrect = appState.exerciseQuestions.reduce((acc, q, idx) => {
-          return acc + (appState.userAnswers[idx] === q.Jawaban_Benar ? 1 : 0);
-        }, 0);
-        const scorePercentage = Math.round((totalCorrect / totalQuestions) * 100);
+      const totalQuestions = appState.exerciseQuestions.length;
+      const totalCorrect = appState.exerciseQuestions.reduce((acc, q, idx) => {
+        return acc + (appState.userAnswers[idx] === q.Jawaban_Benar ? 1 : 0);
+      }, 0);
+      const scorePercentage = Math.round((totalCorrect / totalQuestions) * 100);
 
+      if (appState.isMockMode) {
+        stopChallengeTimer();
         const newResult = {
           setId: appState.currentExerciseSetId || 'MOCK-SET-001',
           Total_Correct: totalCorrect,
@@ -786,9 +1060,9 @@
         let localScores = JSON.parse(localStorage.getItem('meb_local_scores') || '[]');
         localScores.unshift(newResult); 
         localStorage.setItem('meb_local_scores', JSON.stringify(localScores));
-
-        showModal("Latihan Selesai (Offline)", `Skor Anda: ${scorePercentage}% Benar. Hasil disimpan permanen di browser ini.`, "fa-solid fa-circle-check text-emerald-500");
-        setTimeout(() => backToSetSelection(), 3000);
+        
+        clearExerciseProgress();
+        showVisualSummary(totalCorrect, totalQuestions);
         return;
       }
 
@@ -806,8 +1080,10 @@
       showSpinnerButton('btn-finish-exercise', true);
       try {
         const res = await apiCall(payload);
+        stopChallengeTimer();
         if (res.success || res.status === "success") {
-          showModal("Latihan Selesai!", `Skor Anda: ${res.score}% Benar. Hasil telah berhasil disimpan ke database.`, "fa-solid fa-award text-emerald-500");
+          clearExerciseProgress();
+          showVisualSummary(totalCorrect, totalQuestions);
         } else {
           showModal("Gagal Menyimpan", res.error || "Terjadi kesalahan pada server.", "fa-solid fa-circle-xmark text-rose-500");
         }
@@ -840,6 +1116,8 @@
     window.nextQuestion = nextQuestion;
     window.submitExerciseResults = submitExerciseResults;
     window.handleAnswerSelection = handleAnswerSelection;
+    window.toggleBookmark = toggleBookmark;
+    window.updateBookmarkUI = updateBookmarkUI;
 
     window.toggleHeaderProfileDropdown = toggleHeaderProfileDropdown; // Expose to global scope
     window.clearLocalScores = clearLocalScores; // Expose to global scope

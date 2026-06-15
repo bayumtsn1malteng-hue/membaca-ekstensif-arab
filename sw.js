@@ -1,11 +1,16 @@
-// Import Dexie untuk akses database di latar belakang
-importScripts('https://unpkg.com/dexie/dist/dexie.js');
+// Import Dexie using importScripts for classic Service Worker compatibility
+importScripts('./js/dexie.js'); // Assuming you save dexie.js in your js folder
 
-const SW_VERSION = 'v0.8.8-alpha';
-const CACHE_NAME = 'meb-cache-v1';
+const SW_VERSION = 'v0.9.0';
+const CACHE_NAME = 'meb-cache-v0.9.0';
 const urlsToCache = [
   'index.html',
-  'https://cdn.tailwindcss.com'
+  'latihan.html',
+  'css/style.css',
+  'css/fontawesome.min.css',
+  'js/dexie.js',
+  'fonts/plus-jakarta-sans.woff2',
+  'fonts/noto-sans-arabic.woff2'
 ];
 
 self.addEventListener('install', event => {
@@ -43,6 +48,13 @@ self.addEventListener('activate', event => {
   );
 });
 
+// Mendengarkan pesan untuk melewati masa tunggu (Triggered by Update UI)
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // --- PENANGANAN NOTIFIKASI KLIK ---
 self.addEventListener('notificationclick', (event) => {
   event.notification.close(); // Tutup notifikasi setelah diklik
@@ -68,7 +80,7 @@ async function checkAndNotifyLeitner() {
   try {
     // Inisialisasi DB di konteks Service Worker
     const db = new Dexie("MEB_UserDB");
-    db.version(1).stores({
+    db.version(2).stores({
       kamusUser: "ID_User_Word, ID_User, Kata_Polos, ID_Kata_Induk, Status_Belajar, Tanggal_Update",
       appLogs: "++id, eventType, timestamp"
     });

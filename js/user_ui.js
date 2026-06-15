@@ -60,6 +60,13 @@ function switchView(viewName) {
     viewName = 'login';
   }
 
+  // Otomatis aktifkan/nonaktifkan Mode Minimalis berdasarkan View
+  if (viewName === 'reader') {
+    toggleMinimalistMode(true);
+  } else {
+    toggleMinimalistMode(false);
+  }
+
   const views = ['login', 'library', 'reader', 'kamus', 'settings'];
   views.forEach(v => {
     const el = document.getElementById(`view-${v}`);
@@ -108,6 +115,7 @@ function switchView(viewName) {
 
   // Muat ulang tabel jika masuk ke menu Kamus
   if (viewName === 'kamus') {
+    renderBookmarkedQuestionsList();
     renderKamusTable(appState.selectedBoxFilter);
   } else if (viewName === 'library') {
     renderLibrary();
@@ -274,36 +282,34 @@ function filterLibrary(difficulty) {
  * Menggunakan IndexedDB index untuk efisiensi tinggi.
  */
 async function _searchLibrary() { // Ubah nama fungsi asli
-  const q = document.getElementById('library-search').value.trim();
+  const searchInput = document.getElementById('library-search');
+  if (!searchInput) return;
+  
+  const q = searchInput.value.trim();
   
   if (!q) {
     renderLibrary('semua');
     return;
   }
 
-  // Menggunakan Dexie Collection untuk pencarian multi-indeks yang efisien
-  // startsWithIgnoreCase adalah salah satu query tercepat di IndexedDB
-  const results = await db.pustaka
-    .where('Judul_Teks')
-    .startsWithIgnoreCase(q)
-    .or('Seri')
-    .startsWithIgnoreCase(q)
-    .toArray();
-    
-  // Jika tidak ada hasil prefix, gunakan filter pada koleksi (masih lebih cepat dari array filter manual)
-  if (results.length === 0) {
-    const fallbackResults = await db.pustaka
-      .filter(t => 
-        (t.Judul_Teks_Arab && t.Judul_Teks_Arab.includes(q)) || 
-        (t.Terjemah_Judul_Indonesia && t.Terjemah_Judul_Indonesia.toLowerCase().includes(q.toLowerCase()))
-      )
-      .toArray();
-    
-    updateLibraryUI(fallbackResults, q);
-  } else {
-    updateLibraryUI(results, q);
-  }
+  const normalizedQ = normalizeArabic(q).toLowerCase();
+
+  // Melakukan filter dengan normalisasi harakat agar pencarian Arab lebih akurat
+  const results = await db.pustaka.filter(text => {
+    const titleAr = text.Judul_Teks_Arab ? normalizeArabic(text.Judul_Teks_Arab).toLowerCase() : "";
+    const titleId = (text.Judul_Teks || text.Terjemah_Judul_Indonesia || "").toLowerCase();
+    const seri = (text.Seri || "").toLowerCase();
+
+    return titleAr.includes(normalizedQ) || titleId.includes(normalizedQ) || seri.includes(normalizedQ);
+  }).toArray();
+
+  updateLibraryUI(results, q);
 }
+
+/**
+ * Versi debounced dari fungsi pencarian library untuk meningkatkan performa di perangkat low-end.
+ */
+const searchLibrary = debounce(_searchLibrary, 300);
 
 /**
  * Fungsi utilitas untuk debouncing.
@@ -820,11 +826,31 @@ function updateDashboardStats() {
 
 /**
  * Menampilkan custom alert modal box (exposed globally via user_app.js)
+ * @param {string} title - Judul modal
+ * @param {string} message - Pesan modal
+ * @param {string} iconClass - Class ikon FontAwesome
+ * @param {Function} onRetry - Callback untuk tombol coba lagi
  */
-export function showModal(title, message, iconClass = "fa-solid fa-circle-check text-emerald-500") { // Pastikan ini diekspor
+export function showModal(title, message, iconClass = "fa-solid fa-circle-check text-emerald-500", onRetry = null) {
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-message').textContent = message;
   document.getElementById('modal-body').querySelector('i').className = `${iconClass} text-4xl mb-3`;
+  
+  const retryBtn = document.getElementById('modal-retry-btn');
+  const closeBtn = document.getElementById('modal-close-btn');
+
+  if (onRetry && retryBtn) {
+    retryBtn.classList.remove('hidden');
+    retryBtn.onclick = () => {
+      closeModal();
+      onRetry();
+    };
+    if (closeBtn) closeBtn.className = "w-1/2 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition";
+  } else if (retryBtn) {
+    retryBtn.classList.add('hidden');
+    if (closeBtn) closeBtn.className = "w-full py-3 bg-slate-900 dark:bg-slate-850 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition";
+  }
+
   document.getElementById('custom-modal').classList.remove('hidden');
 }
 
@@ -857,6 +883,110 @@ function toggleDarkMode() {
   if (mobileIcon) mobileIcon.className = iconClass;
 }
 
+/**
+ * Mengaktifkan atau menonaktifkan mode minimalis (Focus Mode)
+ * Menyembunyikan navigasi utama agar user fokus pada bacaan atau latihan.
+ * @param {boolean} isOn - True jika ingin menyembunyikan navigasi
+ */
+function toggleMinimalistMode(isOn) {
+  const structuralElements = ['header', 'aside', 'footer', '#mobile-nav', '#desktop-nav', '#difficulty-filters'];
+  const controls = document.getElementById('floating-focus-controls');
+  
+  structuralElements.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach(el => {
+      if (isOn) {
+        el.classList.add('opacity-0', 'pointer-events-none', 'invisible', '-translate-y-4');
+        // Gunakan timeout untuk hidden agar animasi opacity selesai dulu
+        setTimeout(() => { if (isOn) el.classList.add('hidden'); }, 300);
+      } else {
+        el.classList.remove('hidden');
+        // Jeda kecil agar browser me-render elemen sebelum mengubah opacity
+        setTimeout(() => el.classList.remove('opacity-0', 'pointer-events-none', 'invisible', '-translate-y-4'), 10);
+      }
+    });
+  });
+
+  if (controls) {
+    if (isOn) {
+      controls.classList.remove('scale-0', 'opacity-0', 'pointer-events-none');
+      
+      // Tampilkan navigasi navigasi tambahan hanya jika di halaman latihan atau ada navigasi internal
+      const isExercise = window.location.pathname.includes('latihan.html');
+      const prevBtn = document.getElementById('focus-prev-btn');
+      const nextBtn = document.getElementById('focus-next-btn');
+      
+      if (prevBtn && nextBtn) {
+        if (isExercise) {
+          prevBtn.classList.remove('hidden');
+          nextBtn.classList.remove('hidden');
+        } else {
+          prevBtn.classList.add('hidden');
+          nextBtn.classList.add('hidden');
+        }
+      }
+    } else {
+      controls.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
+    }
+  }
+
+  // Aktifkan kelas CSS untuk efek blur dan fokus
+  document.body.classList.toggle('focus-active', isOn);
+
+  // Sesuaikan padding container utama pada Desktop agar konten menjadi full-width
+  const mainContentArea = document.querySelector('.md\\:pl-64');
+  if (mainContentArea) {
+    if (isOn) mainContentArea.classList.replace('md:pl-64', 'md:pl-0');
+    else mainContentArea.classList.replace('md:pl-0', 'md:pl-64');
+  }
+}
+
+/**
+ * Merender daftar soal yang di-bookmark di halaman Kamus (index.html)
+ */
+function renderBookmarkedQuestionsList() {
+  const container = document.getElementById('bookmarked-questions-list');
+  if (!container) return;
+
+  container.innerHTML = ''; // Clear previous content
+  
+  const badge = document.getElementById('bookmarked-count-badge');
+  if (badge) badge.textContent = `${appState.bookmarkedQuestions.length} Soal`;
+
+  if (appState.bookmarkedQuestions.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-8 text-slate-400 dark:text-slate-500">
+        <i class="fa-regular fa-bookmark text-3xl mb-2 opacity-50 block"></i>
+        <p class="text-xs">Belum ada soal yang ditandai sebagai sulit.</p>
+      </div>
+    `;
+    return;
+  }
+
+  appState.bookmarkedQuestions.forEach(bookmark => {
+    const item = document.createElement('div');
+    item.className = "bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col gap-3";
+    
+    // Escape single quotes for the onclick string to prevent syntax errors
+    const safeTitle = (bookmark.setTitle || '').replace(/'/g, "\\'");
+    const safeText = (bookmark.questionText || '').replace(/'/g, "\\'");
+
+    item.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] font-bold text-slate-400 uppercase">${bookmark.setTitle || 'Himpunan Tidak Dikenal'}</span>
+        <button onclick="toggleBookmark({ID_No_Soal: '${bookmark.id}', ID_Himpunan_Latihan: '${bookmark.setId}', Judul_Himpunan_Latihan: '${safeTitle}', Teks_Soal: '${safeText}'})" class="text-amber-500 hover:text-amber-600 transition p-1">
+          <i class="fa-solid fa-bookmark"></i>
+        </button>
+      </div>
+      <p class="font-arabic text-lg text-right text-slate-900 dark:text-white leading-relaxed">${bookmark.questionText}</p>
+      <a href="latihan.html?mode=bookmark_review&setId=${bookmark.setId}&questionId=${bookmark.id}" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl text-center transition">
+        <i class="fa-solid fa-arrow-right mr-1"></i> Review Soal Ini
+      </a>
+    `;
+    container.appendChild(item);
+  });
+}
+
 // Export all functions that need to be accessed from outside this module
 export {
   switchView,
@@ -864,7 +994,7 @@ export {
   setupUserInterface,
   renderLibrary,
   filterLibrary,
-  _searchLibrary,
+  searchLibrary,
   debounce, // Export debounce agar bisa digunakan di index.html
   loadReader,
   renderInteractiveArabicText,
@@ -883,8 +1013,15 @@ export {
   hideDictModal, // Ekspos fungsi baru untuk menyembunyikan modal
   updateDashboardStats,
   showSpinnerButton,
-  toggleDarkMode
+  toggleDarkMode,
+  renderBookmarkedQuestionsList,
+  toggleMinimalistMode
 };
+
+// Global exposure for dynamic HTML onclick handlers and cross-module access
+window.toggleBookmark = toggleBookmark;
+window.updateBookmarkUI = updateBookmarkUI;
+window.renderBookmarkedQuestionsList = renderBookmarkedQuestionsList;
 
 /**
  * Mengambil bentuk berharakat sebuah item kamus dari data induk atau peta kosakata.
@@ -908,4 +1045,57 @@ export function getVocalizedWord(item) {
   if (mapping) return mapping.Kata_Teks;
 
   return item.Kata_Polos;
+}
+
+/**
+ * Menangani toggle bookmark untuk soal aktif
+ * @param {object} questionData - Objek data soal lengkap yang sedang aktif
+ */
+export async function toggleBookmark(questionData) {
+  if (!questionData || !questionData.ID_No_Soal) return;
+
+  const qId = questionData.ID_No_Soal;
+  const existingIndex = appState.bookmarkedQuestions.findIndex(b => b.id === qId);
+
+  try {
+    if (existingIndex > -1) {
+      // Remove bookmark
+      await db.bookmarks.delete(qId);
+      appState.bookmarkedQuestions.splice(existingIndex, 1);
+      showModal("Bookmark Dihapus", "Soal ini telah dihapus dari daftar bookmark Anda.", "fa-solid fa-bookmark text-slate-400");
+    } else {
+      // Add bookmark
+      const bookmarkItem = {
+        id: qId,
+        setId: questionData.ID_Himpunan_Latihan,
+        setTitle: questionData.Judul_Himpunan_Latihan,
+        questionText: questionData.Teks_Soal
+      };
+      await db.bookmarks.put(bookmarkItem);
+      appState.bookmarkedQuestions.push(bookmarkItem);
+      showModal("Bookmark Ditambahkan", "Soal ini telah ditambahkan ke daftar bookmark Anda.", "fa-solid fa-bookmark text-amber-500");
+    }
+    localStorage.setItem('meb_bookmarks', JSON.stringify(appState.bookmarkedQuestions));
+  } catch (err) {
+    console.error("[DB] Gagal memperbarui bookmark:", err);
+    showModal("Kesalahan Database", "Gagal menyimpan bookmark ke penyimpanan lokal. Perubahan ini mungkin tidak tersimpan permanen.", "fa-solid fa-triangle-exclamation text-rose-500");
+  }
+  updateBookmarkUI();
+  renderBookmarkedQuestionsList(); // Re-render the list in index.html if visible
+}
+
+/**
+ * Update icon bookmark berdasarkan status soal aktif
+ */
+export function updateBookmarkUI() {
+  const btn = document.getElementById('btn-bookmark');
+  if (!btn) return;
+
+  const qId = appState.currentQuestionData ? appState.currentQuestionData.ID_No_Soal : null;
+  const isBookmarked = qId && appState.bookmarkedQuestions.some(b => b.id === qId);
+  
+  btn.innerHTML = isBookmarked ? '<i class="fa-solid fa-bookmark text-sm"></i>' : '<i class="fa-regular fa-bookmark text-sm"></i>';
+  btn.className = isBookmarked 
+    ? "absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 transition-all z-10 border border-amber-200 dark:border-amber-800"
+    : "absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-amber-500 transition-all z-10 border border-slate-100 dark:border-slate-700";
 }
