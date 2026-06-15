@@ -144,6 +144,10 @@ function doPost(e) {
       responseData = deleteMultipleLatihan(requestData.targets);
     } else if (action === "bulkReviewWords") {
       responseData = handleBulkReviewWords(userId, requestData.reviews);
+    } else if (action === "uploadBackupToDrive") {
+      responseData = uploadBackupToDrive(requestData.userId, requestData.backupData);
+    } else if (action === "getLatestBackupFromDrive") {
+      responseData = getLatestBackupFromDrive(requestData.userId);
     } else if (action === "getLatihanQuestions") {
       responseData = getLatihanQuestions(requestData.setId);
     } else if (action === "saveExerciseResults") {
@@ -455,6 +459,74 @@ function saveLatihan(data) {
 
   return { success: true, id_no_soal: idNoSoal, total_soal: count, message: "Latihan berhasil disimpan." };
 }
+
+/**
+ * Mengunggah cadangan data JSON ke Google Drive pengguna.
+ * @param {string} userId - ID pengguna yang melakukan backup.
+ * @param {string} backupJsonString - Data cadangan dalam format string JSON.
+ * @returns {Object} Objek respons berisi status sukses dan detail file.
+ */
+function uploadBackupToDrive(userId, backupJsonString) {
+  try {
+    const folderName = "MEB Backups";
+    let folder = DriveApp.getFoldersByName(folderName).next();
+    
+    // Buat folder jika belum ada
+    if (!folder) {
+      folder = DriveApp.createFolder(folderName);
+    }
+
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd_HHmmss");
+    const fileName = `MEB_Backup_${userId}_${timestamp}.json`;
+
+    const file = folder.createFile(fileName, backupJsonString, MimeType.JSON);
+
+    return { success: true, message: "Cadangan berhasil diunggah ke Google Drive.", fileId: file.getId(), fileName: file.getName() };
+  } catch (err) {
+    return { success: false, error: `Gagal mengunggah ke Google Drive: ${err.toString()}` };
+  }
+}
+
+/**
+ * Mengambil konten file cadangan terbaru dari Google Drive berdasarkan UserId.
+ * @param {string} userId - ID User yang mencari cadangan.
+ * @returns {Object} Objek respons berisi data JSON cadangan.
+ */
+function getLatestBackupFromDrive(userId) {
+  try {
+    const folderName = "MEB Backups";
+    const folders = DriveApp.getFoldersByName(folderName);
+    if (!folders.hasNext()) return { success: false, error: "Folder cadangan tidak ditemukan." };
+    
+    const folder = folders.next();
+    const files = folder.getFilesByType(MimeType.JSON);
+    const backups = [];
+    
+    while (files.hasNext()) {
+      const file = files.next();
+      // Pola nama: MEB_Backup_IDUSER_YYYY-MM-DD... 
+      // Ditambahkan "_" setelah userId untuk mencegah partial match (misal: USR-1 cocok dengan USR-10)
+      if (file.getName().indexOf("MEB_Backup_" + userId + "_") !== -1) {
+        backups.push({
+          id: file.getId(),
+          dateCreated: file.getDateCreated()
+        });
+      }
+    }
+    
+    if (backups.length === 0) return { success: false, error: "Tidak ada file cadangan di Drive Anda." };
+    
+    // Urutkan berdasarkan tanggal dibuat (terbaru di atas)
+    backups.sort((a, b) => b.dateCreated - a.dateCreated);
+    const latestFile = DriveApp.getFileById(backups[0].id);
+    const content = latestFile.getBlob().getDataAsString();
+    
+    return { success: true, data: JSON.parse(content) };
+  } catch (err) {
+    return { success: false, error: "Gagal mengambil cadangan: " + err.toString() };
+  }
+}
+
 
 /**
  * LOGIKA PENGHAPUSAN DATA LATIHAN

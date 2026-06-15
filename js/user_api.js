@@ -1,13 +1,13 @@
 /**
  * MODUL KOMUNIKASI API USER (USER API MODULE)
- * Versi: v0.5.6-alpha (Fase 1 - Modular)
+ * Versi: v0.8.8-alpha (Sync Version)
  * ID Unik: MEB-USER-API-001
  * * Modul ini menangani pemanggilan API sinkronisasi data user dan sistem
  * dengan Google Apps Script Web App.
  */
 
-import { appState } from './user_app.js';
-import { renderLibrary, updateDashboardStats, renderKamusTable } from './user_ui.js';
+import { appState, db } from './user_app.js';
+import { renderLibrary, updateDashboardStats, renderKamusTable, showModal } from './user_ui.js';
 /**
  * Melakukan pemanggilan POST API secara aman dengan metode CORS dan retries + exponential backoff
  * @param {Object} payload - Objek data payload yang akan dikirim
@@ -54,6 +54,17 @@ export async function pullSystemDataFromServer() {
       appState.sambungan = res.data.sambungan || [];
       appState.judulHimpunanLatihan = res.data.judul_himpunan_latihan || [];
       
+      
+        // Cache data sistem secara massal ke IndexedDB
+      await Promise.all([
+        db.pustaka.bulkPut(appState.pustaka),
+        db.petaKosakata.bulkPut(appState.petaKosakata),
+        db.kataInduk.bulkPut(appState.kataInduk),
+        db.sambungan.bulkPut(appState.sambungan)
+      ]);
+      console.log("[DB] Data Sistem berhasil diperbarui di IndexedDB");
+
+
       renderLibrary();
       updateDashboardStats();
     }
@@ -117,13 +128,25 @@ export async function pullUserKamusFromServer() {
     });
     if (res.success && res.data) {
       appState.kamusUser = res.data;
-      localStorage.setItem('meb_local_kamus', JSON.stringify(res.data));
+      
+      // Strategi "Remote Wins": Bersihkan cache lokal sebelum menyimpan data segar dari server
+      // Ini memastikan data mock atau data user sebelumnya tidak tercampur.
+      await db.kamusUser.clear();
+      await db.kamusUser.bulkPut(res.data);
+      
+      // Re-hydrate state lokal dari database yang baru saja diperbarui
+      appState.kamusUser = await db.kamusUser.toArray();
+      
       updateDashboardStats();
       if (appState.selectedBoxFilter) {
         renderKamusTable(appState.selectedBoxFilter);
       }
+    } else {
+      console.warn("[Sync] Gagal menarik kamus pribadi:", res.error);
+      showModal("Sinkronisasi Kamus Gagal", res.error || "Server tidak memberikan data kamus.", "fa-solid fa-triangle-exclamation text-amber-500");
     }
   } catch (err) {
     console.error("Gagal sinkron kamus pribadi: ", err);
+    showModal("Kesalahan Jaringan", "Gagal menghubungi server untuk mengambil kamus pribadi.", "fa-solid fa-wifi text-rose-500");
   }
 }

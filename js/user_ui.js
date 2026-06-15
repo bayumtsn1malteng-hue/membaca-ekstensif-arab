@@ -1,11 +1,11 @@
 /**
  * MODUL UI USER (USER UI MODULE)
- * Versi: v0.5.7-alpha (Fase 1 - Modular)
+ * Versi: v0.8.8-alpha (Fix Duplicate Export)
  * ID Unik: MEB-USER-UI-001
  * * Modul ini menangani seluruh rendering visual, manipulasi DOM,
  * pergantian screen (routing), pengaturan font/line-height, dan dialog modal.
  */
-import { appState, handleWordClick } from './user_app.js'; // Import appState and handleWordClick
+import { appState, handleWordClick, db } from './user_app.js'; // Import appState and handleWordClick
 import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
 
 
@@ -156,13 +156,14 @@ function setupUserInterface() {
 /**
  * Me-render daftar buku bacaan pada perpustakaan
  * @param {string} filterDifficulty - Filter level kesulitan ('semua', 'pemula', 'menengah', 'mahir')
+ * @param {Array} overrideList - Opsional, gunakan list ini alih-alih appState.pustaka (untuk hasil cari)
  */
-function renderLibrary(filterDifficulty = 'semua') {
+function renderLibrary(filterDifficulty = 'semua', overrideList = null) {
   const grid = document.getElementById('library-grid');
   if (!grid) return;
   grid.innerHTML = '';
 
-  let list = appState.pustaka;
+  let list = overrideList || appState.pustaka;
   if (filterDifficulty !== 'semua') {
     list = list.filter(item => item.Tingkat_Kesulitan && item.Tingkat_Kesulitan.toLowerCase() === filterDifficulty.toLowerCase());
   }
@@ -270,27 +271,70 @@ function filterLibrary(difficulty) {
 
 /**
  * Mencari buku di library secara real-time (exposed globally via user_app.js)
+ * Menggunakan IndexedDB index untuk efisiensi tinggi.
  */
-function searchLibrary() {
-  const q = document.getElementById('library-search').value.toLowerCase();
-  const grid = document.getElementById('library-grid');
-  grid.innerHTML = '';
-
-  let list = appState.pustaka.filter(t => {
-    const judulIndo = (t.Judul_Teks || t.Terjemah_Judul_Indonesia || "").toLowerCase();
-    const judulArab = (t.Judul_Teks_Arab || "");
-    const seri = (t.Seri || "").toLowerCase();
-    return judulIndo.includes(q) || judulArab.includes(q) || seri.includes(q);
-  });
-
-  if (list.length === 0) {
-    grid.innerHTML = `
-      <div class="col-span-full text-center py-12 text-slate-400">
-        <p class="text-xs">Tidak ada judul yang cocok dengan "${q}".</p>
-      </div>`;
+async function _searchLibrary() { // Ubah nama fungsi asli
+  const q = document.getElementById('library-search').value.trim();
+  
+  if (!q) {
+    renderLibrary('semua');
     return;
   }
-  renderLibrary();
+
+  // Menggunakan Dexie Collection untuk pencarian multi-indeks yang efisien
+  // startsWithIgnoreCase adalah salah satu query tercepat di IndexedDB
+  const results = await db.pustaka
+    .where('Judul_Teks')
+    .startsWithIgnoreCase(q)
+    .or('Seri')
+    .startsWithIgnoreCase(q)
+    .toArray();
+    
+  // Jika tidak ada hasil prefix, gunakan filter pada koleksi (masih lebih cepat dari array filter manual)
+  if (results.length === 0) {
+    const fallbackResults = await db.pustaka
+      .filter(t => 
+        (t.Judul_Teks_Arab && t.Judul_Teks_Arab.includes(q)) || 
+        (t.Terjemah_Judul_Indonesia && t.Terjemah_Judul_Indonesia.toLowerCase().includes(q.toLowerCase()))
+      )
+      .toArray();
+    
+    updateLibraryUI(fallbackResults, q);
+  } else {
+    updateLibraryUI(results, q);
+  }
+}
+
+/**
+ * Fungsi utilitas untuk debouncing.
+ * Mencegah fungsi dipanggil terlalu sering dalam waktu singkat.
+ * @param {Function} func - Fungsi yang akan di-debounce.
+ * @param {number} delay - Waktu tunda dalam milidetik.
+ * @returns {Function} Fungsi yang sudah di-debounce.
+ */
+function debounce(func, delay) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
+/**
+ * Helper untuk merender hasil pencarian ke Grid
+ */
+function updateLibraryUI(list, query) {
+  const grid = document.getElementById('library-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400"><p class="text-xs">Tidak ada judul yang cocok dengan "${query}".</p></div>`;
+    return;
+  }
+  
+  // Panggil renderer utama dengan subset data
+  renderLibrary('semua', list);
 }
 
 /**
@@ -695,7 +739,7 @@ async function closeLeitnerSession() {
       console.log("[Sync] Response from backend:", res);
 
       // Cek sukses dengan lebih fleksibel (handle case-insensitive dan berbagai format GAS)
-      const isSuccess = res && (res.success === true || (res.status && res.status.toLowerCase() === "success"));
+      const isSuccess = res && (res.success === true || (res.status && res.status.toLowerCase() === "success") || res.success === "true");
 
       if (isSuccess) {
         showModal("Sinkronisasi Sukses", "Hasil sesi Leitner berhasil disimpan ke Google Sheets Anda.", "fa-solid fa-cloud-check text-brand-500");
@@ -777,7 +821,7 @@ function updateDashboardStats() {
 /**
  * Menampilkan custom alert modal box (exposed globally via user_app.js)
  */
-function showModal(title, message, iconClass = "fa-solid fa-circle-check text-emerald-500") {
+export function showModal(title, message, iconClass = "fa-solid fa-circle-check text-emerald-500") { // Pastikan ini diekspor
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-message').textContent = message;
   document.getElementById('modal-body').querySelector('i').className = `${iconClass} text-4xl mb-3`;
@@ -820,7 +864,8 @@ export {
   setupUserInterface,
   renderLibrary,
   filterLibrary,
-  searchLibrary,
+  _searchLibrary,
+  debounce, // Export debounce agar bisa digunakan di index.html
   loadReader,
   renderInteractiveArabicText,
   adjustReaderFont,
@@ -837,7 +882,6 @@ export {
   showDictModal, // Ekspos fungsi baru untuk menampilkan modal
   hideDictModal, // Ekspos fungsi baru untuk menyembunyikan modal
   updateDashboardStats,
-  showModal,
   showSpinnerButton,
   toggleDarkMode
 };

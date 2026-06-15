@@ -1,6 +1,6 @@
 /**
  * MODUL UTAMA APLIKASI USER (USER APP MODULE)
- * Versi: v0.5.7-alpha (Fase 2 - Modular)
+ * Versi: v0.8.8-alpha (Fix Duplicate Exports)
  * ID Unik: MEB-USER-APP-001
  *
  * Modul ini mengelola:
@@ -18,8 +18,10 @@
  *   3. js/user_ui.js           → switchView, renderLibrary, updateDashboardStats, dll.
  */ // Removed getVocalizedWord from here, as it's now in user_ui.js
 
+import Dexie from 'https://unpkg.com/dexie/dist/dexie.mjs';
+
 import { apiCall, pullSystemDataFromServer, pullUserKamusFromServer, fetchExerciseData, fetchExerciseScoreHistory } from './user_api.js';
-import { switchView, renderLibrary, updateDashboardStats, setupUserInterface, showModal, showSpinnerButton, toggleDarkMode, renderKamusTable, loadReader, showDictModal, hideDictModal, buildDynamicModeBLayout, loadLeitnerCard, revealLeitnerCard, closeLeitnerSession, filterKamusByBox, toggleAuthMode, filterLibrary, searchLibrary, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, closeModal } from './user_ui.js';
+import { switchView, renderLibrary, updateDashboardStats, setupUserInterface, showModal, showSpinnerButton, toggleDarkMode, renderKamusTable, loadReader, showDictModal, hideDictModal, buildDynamicModeBLayout, loadLeitnerCard, revealLeitnerCard, closeLeitnerSession, filterKamusByBox, toggleAuthMode, filterLibrary, _searchLibrary, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, closeModal } from './user_ui.js';
 import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
 // Import modul lain jika sudah dipisah (Contoh: import { setupUserInterface } from './user_ui.js';)
 
@@ -28,6 +30,20 @@ import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
 // ============================================================
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'meb-ext-reader';
 const isModule = true;
+
+// ============================================================
+// --- KONFIGURASI INDEXEDDB (DEXIE.JS) ---
+// ============================================================
+
+export const db = new Dexie("MEB_UserDB");
+db.version(1).stores({
+  pustaka: "ID_Teks, Seri, Tingkat_Kesulitan, Judul_Teks, Judul_Teks_Arab",
+  petaKosakata: "ID_Kosakata, ID_Teks, Kata_Teks_Polos, ID_Kata_Induk",
+  kamusUser: "ID_User_Word, ID_User, Kata_Polos, ID_Kata_Induk, Status_Belajar, Tanggal_Update",
+  kataInduk: "ID_Kata_Induk, Kata_Induk_Polos",
+  sambungan: "ID_Sambungan, Bentuk_Sambungan",
+  appLogs: "++id, eventType, timestamp"
+});
 
 let appState = {
   gasEndpoint: localStorage.getItem('meb_gas_endpoint') || '',
@@ -70,6 +86,402 @@ if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
   });
 }
 
+/**
+ * Migrasi data dari localStorage ke IndexedDB (Hanya sekali jalan)
+ */
+export async function migrateFromLocalStorage() {
+  const oldKamus = localStorage.getItem('meb_local_kamus');
+  if (oldKamus) {
+    try {
+      const parsed = JSON.parse(oldKamus);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        console.log("[DB] Migrasi data kamus ke IndexedDB...");
+        await db.kamusUser.bulkPut(parsed);
+        localStorage.removeItem('meb_local_kamus');
+        console.log("[DB] Migrasi berhasil.");
+      }
+    } catch (e) { console.error("Migrasi gagal:", e); }
+  }
+}
+
+/**
+ * Mengisi appState dari data yang tersimpan di IndexedDB
+ */
+export async function hydrateAppStateFromDB() {
+  console.log("[DB] Memulai hidrasi state dari IndexedDB...");
+  const [pustaka, peta, kamus, induk, sambungan] = await Promise.all([
+    db.pustaka.toArray(),
+    db.petaKosakata.toArray(),
+    db.kamusUser.toArray(),
+    db.kataInduk.toArray(),
+    db.sambungan.toArray()
+  ]);
+  appState.pustaka = pustaka;
+  appState.petaKosakata = peta;
+  appState.kamusUser = kamus;
+  appState.kataInduk = induk;
+  appState.sambungan = sambungan;
+  updateDashboardStats(); // Pastikan statistik terupdate setelah hidrasi
+
+  checkLeitnerReminders();
+}
+
+/**
+ * Mengecek apakah IndexedDB kosong pada sesi login aktif, jika ya, trigger restore otomatis.
+ */
+export async function checkAndAutoRestore() {
+  if (!appState.currentUser || appState.isMockMode || !appState.gasEndpoint) return;
+
+  // Periksa apakah tabel data utama kosong
+  const pustakaCount = await db.pustaka.count();
+  const kamusCount = await db.kamusUser.count();
+
+  if (pustakaCount === 0 && kamusCount === 0) {
+    await importLatestBackupFromDrive(true);
+  }
+}
+
+/**
+ * Meminta izin notifikasi kepada pengguna
+ */
+export async function requestNotificationPermission() {
+  if (!("Notification" in window)) {
+    showModal("Tidak Didukung", "Browser Anda tidak mendukung notifikasi desktop.", "fa-solid fa-circle-xmark text-rose-500");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
+    sendLocalNotification("Notifikasi Aktif", "Anda akan menerima pengingat untuk sesi Leitner dan status backup.");
+    setupPeriodicSync(); // Daftarkan sinkronisasi latar belakang
+  } else {
+    showModal("Izin Ditolak", "Anda tidak akan menerima notifikasi dari aplikasi ini.", "fa-solid fa-bell-slash text-slate-400");
+  }
+}
+
+/**
+ * Mengirim notifikasi lokal (PWA)
+ */
+export function sendLocalNotification(title, body) {
+  if (Notification.permission === "granted") {
+    const options = {
+      body: body,
+      icon: "https://cdn-icons-png.flaticon.com/512/3389/3389081.png",
+      badge: "https://cdn-icons-png.flaticon.com/512/3389/3389081.png",
+      vibrate: [100, 50, 100]
+    };
+
+    // Coba via Service Worker untuk kompatibilitas PWA yang lebih baik
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification(title, options);
+      });
+    } else {
+      new Notification(title, options);
+    }
+  }
+}
+
+/**
+ * Mendaftarkan Periodic Background Sync untuk pengingat harian (Hanya Chromium + PWA Terinstal)
+ */
+export async function setupPeriodicSync() {
+  if ('serviceWorker' in navigator && 'periodicSync' in registration) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const status = await navigator.permissions.query({
+        name: 'periodic-background-sync',
+      });
+
+      if (status.state === 'granted') {
+        await registration.periodicSync.register('leitner-reminder', {
+          minInterval: 24 * 60 * 60 * 1000, // Sekali sehari
+        });
+        console.log("[PWA] Periodic Sync berhasil didaftarkan.");
+      }
+    } catch (error) {
+      console.error("[PWA] Gagal mendaftarkan Periodic Sync:", error);
+    }
+  } else {
+    console.log("[PWA] Browser tidak mendukung Periodic Background Sync.");
+  }
+}
+
+/**
+ * Mengecek apakah ada kata yang perlu di-review hari ini dan kirim notifikasi
+ */
+function checkLeitnerReminders() {
+  const now = new Date();
+  const dueCount = appState.kamusUser.filter(item => 
+    item.Status_Belajar !== 'Known' && 
+    new Date(item.Tanggal_Review_Berikutnya) <= now
+  ).length;
+
+  if (dueCount > 0) {
+    sendLocalNotification("Sesi Leitner Siap", `Ada ${dueCount} kosakata yang perlu Anda tinjau hari ini.`);
+  }
+}
+
+/**
+ * Memvalidasi integritas data cadangan sebelum diimpor ke IndexedDB
+ * @param {Object} data - Objek JSON cadangan
+ * @returns {string|null} Pesan error jika tidak valid, null jika valid
+ */
+function validateBackupData(data) {
+  if (!data || typeof data !== 'object') return "File cadangan bukan format JSON yang valid.";
+  if (!data.tables || typeof data.tables !== 'object') return "Struktur tabel cadangan tidak ditemukan.";
+  
+  const requiredTables = ["pustaka", "petaKosakata", "kamusUser", "kataInduk", "sambungan"];
+  for (const table of requiredTables) {
+    if (!data.tables[table] || !Array.isArray(data.tables[table])) {
+      return `Data tabel '${table}' hilang atau korup.`;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Mengimpor database dari file JSON
+ */
+export async function importDatabaseFromJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const importData = JSON.parse(e.target.result);
+
+      const integrityError = validateBackupData(importData);
+      if (integrityError) {
+        showModal("Integritas Gagal", integrityError, "fa-solid fa-triangle-exclamation text-rose-500");
+        throw new Error("Format file cadangan tidak valid.");
+      }
+
+      const confirmImport = confirm("Peringatan: Impor data akan menimpa seluruh data lokal saat ini. Lanjutkan?");
+      if (!confirmImport) return;
+
+      showModal("Memproses Impor", "Mohon tunggu, sedang memulihkan database...", "fa-solid fa-spinner animate-spin text-brand-600");
+
+      // Bersihkan dan Isi Tabel
+      for (const tableName in importData.tables) {
+        if (db[tableName]) {
+          await db[tableName].clear();
+          await db[tableName].bulkPut(importData.tables[tableName]);
+        }
+      }
+
+      await hydrateAppStateFromDB();
+      renderLibrary();
+      updateDashboardStats();
+
+      showModal("Pemulihan Berhasil", "Seluruh data telah berhasil dipulihkan dari cadangan.", "fa-solid fa-circle-check text-emerald-500");
+      sendLocalNotification("Impor Selesai", "Database lokal telah diperbarui dari file cadangan.");
+
+    } catch (err) {
+      showModal("Gagal Impor", "Terjadi kesalahan saat membaca file: " + err.message, "fa-solid fa-circle-xmark text-rose-500");
+    } finally {
+      event.target.value = ""; // Reset input file
+    }
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * Fungsi internal untuk menghasilkan objek data cadangan dari IndexedDB.
+ * @returns {Object} Objek berisi data dari semua tabel IndexedDB.
+ */
+async function _generateBackupData() {
+  const exportData = {
+    timestamp: new Date().toISOString(),
+    version: "v0.8.8", // Update version to match app version
+    tables: {}
+  };
+  for (const table of db.tables) {
+    exportData.tables[table.name] = await table.toArray();
+  }
+  return exportData;
+}
+
+/**
+ * Menghapus hanya data Kamus Leitner personal namun mempertahankan Pustaka Bacaan
+ */
+export async function clearKamusOnly() {
+  const confirmReset = confirm("Apakah Anda yakin ingin menghapus seluruh Kamus Leitner Anda? Data Pustaka Bacaan dan pengaturan tetap akan dipertahankan.");
+  if (!confirmReset) return;
+
+  try {
+    showModal("Membersihkan Kamus", "Sedang menghapus data Leitner...", "fa-solid fa-spinner animate-spin text-amber-600");
+
+    // 1. Catat log sebelum dihapus
+    await db.appLogs.add({
+      eventType: 'partial-reset-kamus',
+      timestamp: new Date().toISOString(),
+      status: 'success'
+    });
+
+    // 2. Bersihkan tabel kamus dan state
+    await db.kamusUser.clear();
+    appState.kamusUser = [];
+
+    // 3. Update UI
+    updateDashboardStats();
+    if (appState.selectedBoxFilter) {
+      renderKamusTable(appState.selectedBoxFilter);
+    }
+    
+    showModal("Kamus Dihapus", "Seluruh data kamus personal telah dibersihkan.", "fa-solid fa-circle-check text-emerald-500");
+  } catch (err) {
+    showModal("Gagal Reset", err.toString(), "fa-solid fa-circle-xmark text-rose-500");
+  }
+}
+
+/**
+ * Menghapus seluruh data lokal (IndexedDB & LocalStorage) untuk reset total aplikasi
+ */
+export async function clearAllLocalData() {
+  const confirmReset = confirm("Peringatan: Ini akan menghapus data lokal (pustaka, kamus) dan mengeluarkan Anda dari aplikasi. Catatan log reset akan dipertahankan. Lanjutkan?");
+  if (!confirmReset) return;
+
+  try {
+    showModal("Mereset Data", "Sedang membersihkan database lokal...", "fa-solid fa-spinner animate-spin text-rose-600");
+
+    // 1. Catat log sebelum dihapus agar ada catatan historis
+    await db.appLogs.add({
+      eventType: 'full-reset-local',
+      timestamp: new Date().toISOString(),
+      status: 'initiated'
+    });
+
+    // 2. Hapus semua tabel di IndexedDB KECUALI appLogs agar catatan historis reset tetap ada
+    const tablesToClear = db.tables.filter(t => t.name !== 'appLogs');
+    await Promise.all(tablesToClear.map(table => table.clear()));
+
+    // 3. Bersihkan localStorage (Menghapus user, endpoint, settings, dll)
+    localStorage.clear();
+
+    showModal("Reset Berhasil", "Semua data lokal telah dihapus. Aplikasi akan dimuat ulang.", "fa-solid fa-circle-check text-emerald-500");
+
+    // Muat ulang halaman setelah jeda singkat agar user bisa melihat pesan sukses
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  } catch (err) {
+    showModal("Gagal Reset", err.toString(), "fa-solid fa-circle-xmark text-rose-500");
+  }
+}
+
+/**
+ * Mengambil dan memulihkan database dari file terbaru di Google Drive
+ * @param {boolean} isAuto - Jika true, lewati konfirmasi manual pengguna
+ */
+export async function importLatestBackupFromDrive(isAuto = false) {
+  if (!appState.currentUser || appState.isMockMode) {
+    if (!isAuto) showModal("Akses Ditolak", "Login diperlukan untuk mengakses Drive.", "fa-solid fa-lock text-rose-500");
+    return;
+  }
+
+  if (!isAuto) {
+    showModal("Menghubungkan Drive", "Mencari file cadangan terbaru di Drive Anda...", "fa-solid fa-cloud-arrow-down animate-pulse text-brand-600");
+  }
+
+  try {
+    const res = await apiCall({
+      action: "getLatestBackupFromDrive",
+      userId: appState.currentUser.userId
+    });
+
+    if (res.success && res.data) {
+      if (!isAuto) {
+        const confirmImport = confirm("File cadangan ditemukan di Drive. Apakah Anda yakin ingin menimpa data lokal dengan data tersebut?");
+        if (!confirmImport) { closeModal(); return; }
+      }
+      
+      const integrityError = validateBackupData(res.data);
+      if (integrityError) {
+        showModal("Integritas Drive Gagal", integrityError, "fa-solid fa-triangle-exclamation text-rose-500");
+        return;
+      }
+
+      showModal("Memproses Impor", "File cadangan ditemukan. Memulihkan data lokal...", "fa-solid fa-database animate-pulse text-brand-600");
+
+      // Proses pemulihan
+      for (const tableName in res.data.tables) {
+        if (db[tableName]) {
+          await db[tableName].clear();
+          await db[tableName].bulkPut(res.data.tables[tableName]);
+        }
+      }
+      await hydrateAppStateFromDB();
+      
+      // Catat log aktivitas restorasi
+      await db.appLogs.add({
+        eventType: isAuto ? 'auto-restore' : 'manual-restore-drive',
+        timestamp: new Date().toISOString(),
+        status: 'success'
+      });
+
+      // Tidak perlu closeModal() di sini, karena showModal() berikutnya akan menimpa
+      renderLibrary();
+      showModal("Pemulihan Sukses", "Data Anda telah sinkron dengan cadangan Drive terbaru.", "fa-solid fa-cloud-check text-emerald-500");
+    } else {
+      showModal("Tidak Ditemukan", res.error || "Gagal mengambil data dari Drive.", "fa-solid fa-circle-info text-amber-500");
+    }
+  } catch (err) {
+    showModal("Kesalahan", "Gagal menghubungi server: " + err.toString(), "fa-solid fa-circle-xmark text-rose-500");
+  }
+}
+
+/**
+ * Mengekspor seluruh database IndexedDB ke file JSON untuk cadangan manual
+ */
+export async function exportDatabaseToJson() {
+  try {
+    const exportData = await _generateBackupData();
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `MEB_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showModal("Backup Berhasil", "Seluruh data lokal Anda telah berhasil diekspor.", "fa-solid fa-file-export text-emerald-500");
+  } catch (err) {
+    showModal("Backup Gagal", err.toString(), "fa-solid fa-circle-xmark text-rose-500");
+  }
+}
+
+/**
+ * Mengunggah cadangan database IndexedDB ke Google Drive melalui Google Apps Script.
+ */
+export async function uploadBackupToDrive() {
+  if (!appState.currentUser || appState.isMockMode) {
+    showModal("Akses Ditolak", "Fitur ini hanya tersedia untuk pengguna yang login dan terhubung ke server.", "fa-solid fa-triangle-exclamation text-amber-500");
+    return;
+  }
+
+  showModal("Mempersiapkan Cadangan", "Mengumpulkan data dari database lokal...", "fa-solid fa-box-open animate-pulse text-brand-600");
+  showModal("Mengunggah Cadangan", "Mempersiapkan data dan mengunggah ke Google Drive Anda...", "fa-solid fa-cloud-arrow-up animate-pulse text-brand-600");
+  try {
+    const backupData = await _generateBackupData();
+    const res = await apiCall({
+      action: "uploadBackupToDrive",
+      userId: appState.currentUser.userId,
+      backupData: JSON.stringify(backupData, null, 2) // Kirim sebagai string JSON
+    });
+
+    if (res.success) {
+      showModal("Cadangan Berhasil", `Data Anda berhasil dicadangkan ke Google Drive sebagai "${res.fileName}".`, "fa-solid fa-cloud-check text-emerald-500");
+      sendLocalNotification("Backup Berhasil", "Cadangan data otomatis telah disimpan di Google Drive.");
+    } else {
+      showModal("Cadangan Gagal", res.error || "Terjadi kesalahan saat mengunggah cadangan.", "fa-solid fa-circle-xmark text-rose-500");
+    }
+  } catch (err) {
+    showModal("Kesalahan Koneksi", "Gagal menghubungi server untuk mengunggah cadangan: " + err.toString(), "fa-solid fa-triangle-exclamation text-amber-500");
+  }
+}
+
 // Ekspos ke window untuk debugging console dan kompatibilitas onclick di HTML
 window.appState = appState;
 
@@ -86,12 +498,20 @@ window.deleteKamusWord = deleteKamusWord; // Ini sudah benar
 window.hideDictModal = hideDictModal; // Ekspos fungsi baru untuk menyembunyikan modal
 window.saveApiEndpoint = saveApiEndpoint;
 window.testApiConnection = testApiConnection;
+window.uploadBackupToDrive = uploadBackupToDrive; // Ekspos fungsi baru untuk upload backup
+window.clearAllLocalData = clearAllLocalData;
+window.clearKamusOnly = clearKamusOnly;
+window.importLatestBackupFromDrive = importLatestBackupFromDrive;
+window.checkAndAutoRestore = checkAndAutoRestore;
+window.requestNotificationPermission = requestNotificationPermission;
+window.importDatabaseFromJson = importDatabaseFromJson;
+window.exportDatabaseToJson = exportDatabaseToJson;
 
 // Fungsi-fungsi dari user_ui.js yang dipanggil langsung dari HTML
 window.switchView = switchView;
 window.toggleAuthMode = toggleAuthMode;
 window.filterLibrary = filterLibrary;
-window.searchLibrary = searchLibrary;
+window.searchLibrary = _searchLibrary; // Tetap ekspos fungsi asli untuk kompatibilitas sementara jika ada yang memanggil langsung
 window.adjustReaderFont = adjustReaderFont;
 window.resetReaderSettings = resetReaderSettings;
 window.adjustReaderLineHeight = adjustReaderLineHeight;
@@ -247,8 +667,8 @@ function bypassLogin() {
 function logout() {
   appState.currentUser = null;
   localStorage.removeItem('meb_user');
-  localStorage.removeItem('meb_local_kamus');
   appState.kamusUser = [];
+  db.kamusUser.clear(); // Bersihkan database lokal saat logout untuk keamanan data
 
   document.getElementById('sidebar-name').textContent = "Guest Mode";
   document.getElementById('sidebar-avatar').textContent = "G";
@@ -277,23 +697,19 @@ function handleAvatarClick() {
  */
 async function loadMockData(clear) {
   if (clear) {
-    localStorage.removeItem('meb_local_kamus');
+    await db.kamusUser.clear();
     appState.kamusUser = [];
     showModal("Database Reset", "Mock data direset ke kondisi default.", "fa-solid fa-database text-amber-500");
   }
-  appState.pustaka = MOCK_PUSTAKA;
-  appState.petaKosakata = MOCK_PETA_KOSAKATA;
-  appState.kataInduk = MOCK_KATA_INDUK;
-  appState.sambungan = MOCK_SAMBUNGAN;
 
-  if (appState.currentUser) {
-    const localKamus = localStorage.getItem('meb_local_kamus');
-    if (localKamus) {
-      appState.kamusUser = JSON.parse(localKamus);
-    } else {
-      appState.kamusUser = [];
-    }
-  }
+  // Hanya gunakan data Mock jika state kosong (mencegah overwriting data asli yang ter-hydrated)
+  if (appState.pustaka.length === 0) appState.pustaka = MOCK_PUSTAKA;
+  if (appState.petaKosakata.length === 0) appState.petaKosakata = MOCK_PETA_KOSAKATA;
+  if (appState.kataInduk.length === 0) appState.kataInduk = MOCK_KATA_INDUK;
+  if (appState.sambungan.length === 0) appState.sambungan = MOCK_SAMBUNGAN;
+
+  // Catatan: appState.kamusUser tetap dipertahankan dari hasil hidrasi IndexedDB
+
   renderLibrary();
   updateDashboardStats();
 }
@@ -467,12 +883,13 @@ async function saveWordToPersonalKamus() {
       Arti_Kustom: customMeaning,
       Status_Belajar: 1,
       Tanggal_Simpan: new Date().toISOString(),
+      Tanggal_Update: new Date().toISOString(),
       Tanggal_Review_Berikutnya: new Date(Date.now() + 86400000).toISOString(),
       Streak_Benar: 0
     };
 
     appState.kamusUser.push(newWord);
-    localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
+    await db.kamusUser.put(newWord);
     updateDashboardStats();
 
     if (appState.currentReadingText) {
@@ -500,11 +917,12 @@ async function saveWordToPersonalKamus() {
           Arti_Kustom: customMeaning,
           Status_Belajar: 1,
           Tanggal_Simpan: new Date().toISOString(),
+          Tanggal_Update: new Date().toISOString(),
           Tanggal_Review_Berikutnya: new Date(Date.now() + 86400000).toISOString(),
           Streak_Benar: 0
         };
         appState.kamusUser.push(serverWord);
-        localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
+        await db.kamusUser.put(serverWord);
         updateDashboardStats();
 
         if (appState.currentReadingText) {
@@ -532,9 +950,9 @@ async function saveWordToPersonalKamus() {
  * Menghapus kosakata dari kamus personal
  * @param {string} idUserWord - ID unik entri kamus yang akan dihapus
  */
-function deleteKamusWord(idUserWord) {
+async function deleteKamusWord(idUserWord) {
   appState.kamusUser = appState.kamusUser.filter(item => item.ID_User_Word !== idUserWord);
-  localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
+  await db.kamusUser.delete(idUserWord);
   renderKamusTable(appState.selectedBoxFilter);
   updateDashboardStats();
   showModal("Dihapus", "Kosakata berhasil dihilangkan dari kamus personal Anda.", "fa-solid fa-trash-arrow-up text-rose-500");
@@ -585,8 +1003,9 @@ async function submitLeitnerResult(isCorrect) {
       const reviewIntervals = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16, 'Known': 30 }; // Days for review intervals
       const nextReviewDays = reviewIntervals[current.Status_Belajar] || 1; // Default to 1 day if not found
       current.Tanggal_Review_Berikutnya = new Date(Date.now() + nextReviewDays * 24 * 60 * 60 * 1000).toISOString();
+      current.Tanggal_Update = new Date().toISOString();
     } //
-    localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
+    await db.kamusUser.put(appState.kamusUser[itemIndex]);
     nextLeitnerCard();
   } else {
     // Pastikan hasil disimpan sebagai objek bersih untuk bulk submission
@@ -617,8 +1036,9 @@ async function submitLeitnerResult(isCorrect) {
       const reviewIntervals = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16, 'Known': 30 }; // Days for review intervals
       const nextReviewDays = reviewIntervals[current.Status_Belajar] || 1; // Default to 1 day if not found
       current.Tanggal_Review_Berikutnya = new Date(Date.now() + nextReviewDays * 24 * 60 * 60 * 1000).toISOString();
+      current.Tanggal_Update = new Date().toISOString();
     }
-    localStorage.setItem('meb_local_kamus', JSON.stringify(appState.kamusUser));
+    await db.kamusUser.put(appState.kamusUser[itemIndex]);
     nextLeitnerCard();
   }
 }

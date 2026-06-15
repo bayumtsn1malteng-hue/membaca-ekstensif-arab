@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Membaca Ekstensif Bertingkat (MEB) - User v0.6.0-alpha</title>
+  <title>Membaca Ekstensif Bertingkat (MEB) - User v0.8.8-alpha</title>
 
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="manifest.json">
@@ -95,7 +95,7 @@
       </div>
       <div>
         <h1 class="text-xs font-bold text-slate-900 dark:text-white leading-none">MEB Arab</h1>
-        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">v0.6.0-alpha</span>
+        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">v0.8.8-alpha</span>
       </div>
     </div>
     <div class="flex items-center gap-2">
@@ -119,7 +119,7 @@
         </div>
         <div>
           <h1 class="text-sm font-bold text-slate-900 dark:text-white leading-none">MEB Arab</h1>
-          <span class="text-[9px] text-brand-600 dark:text-brand-400 font-bold tracking-wider uppercase">v0.6.0-alpha</span>
+          <span class="text-[9px] text-brand-600 dark:text-brand-400 font-bold tracking-wider uppercase">v0.8.8-alpha</span>
         </div>
       </div>
 
@@ -455,6 +455,28 @@
             <button onclick="testApiConnection()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-circle-nodes mr-1"></i> Uji Keberhasilan Koneksi
             </button>
+            <button onclick="exportDatabaseToJson()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-file-export mr-1"></i> Ekspor Cadangan (JSON)
+            </button>
+            <button onclick="document.getElementById('import-db-input').click()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-file-import mr-1"></i> Impor Cadangan (JSON)
+            </button>
+            <input type="file" id="import-db-input" class="hidden" accept=".json" onchange="importDatabaseFromJson(event)">
+            <button onclick="uploadBackupToDrive()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Cadangkan ke Drive
+            </button>
+            <button onclick="importLatestBackupFromDrive()" class="px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Impor dari Drive
+            </button>
+            <button onclick="requestNotificationPermission()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-bell mr-1"></i> Aktifkan Notifikasi
+            </button>
+            <button onclick="clearKamusOnly()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-eraser mr-1"></i> Reset Kamus Saja
+            </button>
+            <button onclick="clearAllLocalData()" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-trash-can mr-1"></i> Hapus Semua Data Lokal (Reset)
+            </button>
             <button onclick="loadMockData(true)" class="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-database mr-1"></i> Bersihkan & Muat Ulang Mock Data
             </button>
@@ -608,7 +630,7 @@
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-[11px] text-slate-500">
       <p>© 2026 Membaca Ekstensif Bertingkat (MEB). Dilisensikan untuk E-Reader Pribadi.</p>
-      <a href="https://bayumtsn1malteng-hue.github.io/membaca-ekstensif-arab/admin/login.html"><p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.6.0-alpha</p></a>
+      <a href="https://bayumtsn1malteng-hue.github.io/membaca-ekstensif-arab/admin/login.html"><p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.8.8-alpha</p></a>
     </footer>
   </div>
 
@@ -633,28 +655,47 @@
 
   <!-- Modul Komunikasi API User -->
   <script src="js/user_api.js" type="module"></script>
-
+  
   <!-- Modul Antarmuka & Rendering UI User -->
   <script src="js/user_ui.js" type="module"></script>
+
+  <script type="module"> import { _searchLibrary as searchLibrary, debounce } from './js/user_ui.js'; window.debouncedSearchLibrary = debounce(searchLibrary, 300); </script>
 
   <!-- Modul Utama Aplikasi (State, Auth, Bisnis Logik) -->
   <script src="js/user_app.js" type="module"></script>
 
   <!-- Inisialisasi Aplikasi -->
   <script type="module"> 
-    import { appState, loadMockData } from './js/user_app.js';
-    import { setupUserInterface, switchView } from './js/user_ui.js';
+    import { appState, loadMockData, migrateFromLocalStorage, hydrateAppStateFromDB, checkAndAutoRestore } from './js/user_app.js';
+    import { setupUserInterface, switchView, _searchLibrary } from './js/user_ui.js'; // Import _searchLibrary
     import { pullSystemDataFromServer, pullUserKamusFromServer } from './js/user_api.js';
 
     window.addEventListener('load', async () => {
+      // Jalankan migrasi sekali jika ada data lama
+      await migrateFromLocalStorage();
+      // Hidrasi state dari database lokal agar aplikasi terasa instan
+      await hydrateAppStateFromDB();
+      
+      // Cek apakah perlu restore otomatis (IndexedDB kosong tapi login aktif)
+      await checkAndAutoRestore();
+
       if (appState.currentUser) {
         setupUserInterface();
         if (appState.isMockMode) {
           await loadMockData(false);
         } else {
-          await Promise.all([pullSystemDataFromServer(), pullUserKamusFromServer()]);
+          // Jalankan sinkronisasi di latar belakang
+          pullSystemDataFromServer();
+          pullUserKamusFromServer();
         }
-        switchView('library');
+
+        // Cek hash fragment di URL untuk menentukan view awal
+        const initialView = window.location.hash.substring(1); // Hapus '#'
+        if (initialView && ['library', 'kamus', 'reader', 'settings'].includes(initialView)) {
+          switchView(initialView);
+        } else {
+          switchView('library'); // Default view
+        }
       } else {
         switchView('login');
       }
