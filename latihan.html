@@ -6,7 +6,7 @@
   <title>MEB Arab - Sesi Latihan v0.9.0</title>
 
   <!-- PWA Meta Tags -->
-  <link rel="manifest" href="../manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14b8a6">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png"> <!-- TODO: Ganti ikon PWA -->
   
@@ -20,7 +20,30 @@
   <!-- Chart.js for Visualizations -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <link rel="stylesheet" href="css/style.css">
+  <!-- Local Tailwind Build with CDN Fallback -->
+  <link rel="stylesheet" href="css/output.css" id="tailwind-link" onerror="loadTailwindFallback()">
+  <script>
+    function loadTailwindFallback() {
+      console.warn("Aset CSS lokal (output.css) tidak ditemukan. Menggunakan CDN Tailwind sebagai cadangan...");
+      const script = document.createElement('script');
+      script.src = 'https://cdn.tailwindcss.com';
+      script.onload = () => {
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                brand: {
+                  50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a', 950: '#042f2e',
+                },
+              },
+            },
+          },
+        };
+      };
+      document.head.appendChild(script);
+    }
+  </script>
   
   <style>
     :root { --reader-font: 'Noto Sans Arabic', sans-serif; }
@@ -92,6 +115,43 @@
       border-color: rgba(30, 41, 59, 0.5);
       box-shadow: 0 10px 40px -15px rgba(0,0,0,0.3);
     }
+
+    /* Animasi transisi khusus saat berpindah mode (Blur & Fade) */
+    @keyframes modeBlurIn {
+      from { opacity: 0; filter: blur(10px); transform: translateY(10px); }
+      to { opacity: 1; filter: blur(0); transform: translateY(0); }
+    }
+    .animate-mode-blur {
+      animation: modeBlurIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    #question-card {
+      transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+    }
+    #question-card #exercise-question-text,
+    #question-card .font-arabic {
+      transition: color 0.3s ease-in-out;
+    }
+
+      /* Ukuran font legenda Leitner untuk layar sangat kecil */
+    @media (max-width: 359px) {
+      #leitner-legend .text-\[9px\] { font-size: 8px !important; }
+    }
+
+    
+
+    /* Card Themes Override */
+    #question-card.card-theme-sepia { background-color: #f4ecd8; border-color: #d6cbb1; }
+    #question-card.card-theme-sepia #exercise-question-text,
+    #question-card.card-theme-sepia .font-arabic { color: #433422; }
+    
+    #question-card.card-theme-retro { background-color: #e0e5c1; border-color: #c5cc99; }
+    #question-card.card-theme-retro #exercise-question-text,
+    #question-card.card-theme-retro .font-arabic { color: #282c16; }
+
+    #question-card.card-theme-dark { background-color: #020617; border-color: #1e293b; }
+    #question-card.card-theme-dark #exercise-question-text,
+    #question-card.card-theme-dark .font-arabic { color: #f8fafc; }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col view-transition">
@@ -197,7 +257,15 @@
             <button onclick="setExerciseMode('challenge')" id="btn-mode-challenge" class="px-3 py-2 rounded-lg text-[10px] font-bold transition">Tantangan</button>
           </div>
           <div class="flex items-center gap-3">
+          <div class="flex items-center gap-4">
             <div id="challenge-timer-display" class="hidden px-4 py-2 bg-rose-50 dark:bg-rose-950 text-rose-600 font-mono font-bold text-sm rounded-xl border border-rose-200">00:00</div>
+            <!-- Theme Picker -->
+            <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+              <button onclick="setCardTheme('default')" class="w-5 h-5 rounded-full bg-white border border-slate-300 transition-transform active:scale-90" title="Terang"></button>
+              <button onclick="setCardTheme('sepia')" class="w-5 h-5 rounded-full bg-[#f4ecd8] border border-[#d6cbb1] transition-transform active:scale-90" title="Sepia"></button>
+              <button onclick="setCardTheme('retro')" class="w-5 h-5 rounded-full bg-[#e0e5c1] border border-[#c5cc99] transition-transform active:scale-90" title="Retro"></button>
+              <button onclick="setCardTheme('dark')" class="w-5 h-5 rounded-full bg-[#020617] border border-[#1e293b] transition-transform active:scale-90" title="Malam"></button>
+            </div>
             <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700">
               <button onclick="adjustReaderFont(-1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-500"><i class="fa-solid fa-minus text-[10px]"></i></button>
               <button onclick="resetReaderSettings()" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition text-slate-400"><i class="fa-solid fa-rotate-left text-[10px]"></i></button>
@@ -252,6 +320,19 @@
               <h4 id="feedback-title" class="text-sm font-bold"></h4>
             </div>
             <p id="feedback-text" class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"></p>
+          </div>
+
+          <!-- Legenda Visual Leitner (Hanya muncul di Mode Baca) -->
+          <div id="leitner-legend" class="hidden opacity-0 transition-opacity duration-300 border-t border-slate-100 dark:border-slate-800 pt-4 mt-6">
+            <div class="flex flex-wrap items-center gap-2 px-3 py-3 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-150 dark:border-slate-800 text-[9px] font-extrabold tracking-wide uppercase">
+              <span class="text-slate-400 mr-2"><i class="fa-solid fa-palette text-brand-600"></i> Status Leitner:</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-rose-200 dark:bg-rose-950/60 border-b-2 border-rose-400 rounded-sm"></span> Box 1</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-amber-200 dark:bg-amber-950/60 border-b-2 border-amber-400 rounded-sm"></span> Box 2</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-yellow-200 dark:bg-yellow-950/60 border-b-2 border-yellow-400 rounded-sm"></span> Box 3</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-sky-200 dark:bg-sky-950/60 border-b-2 border-sky-400 rounded-sm"></span> Box 4</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-indigo-200 dark:bg-indigo-950/60 border-b-2 border-indigo-400 rounded-sm"></span> Box 5</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-emerald-200 dark:bg-emerald-950/60 border-b-2 border-emerald-400 rounded-sm"></span> Known</span>
+            </div>
           </div>
         </div>
 
@@ -782,6 +863,21 @@
       }, 1000);
     }
 
+    /**
+     * Mengatur tema latar belakang kartu soal
+     * @param {string} theme - 'default', 'sepia', 'retro', 'dark'
+     */
+    function setCardTheme(theme) {
+      const card = document.getElementById('question-card');
+      if (!card) return;
+      
+      card.classList.remove('card-theme-sepia', 'card-theme-retro', 'card-theme-dark');
+      if (theme !== 'default') {
+        card.classList.add(`card-theme-${theme}`);
+      }
+      localStorage.setItem('meb_card_theme', theme);
+    }
+
     function stopChallengeTimer() {
       if (challengeTimerInterval) {
         clearInterval(challengeTimerInterval);
@@ -791,8 +887,14 @@
       if (display) display.classList.add('hidden');
     }
 
+    // State pelacak transisi mode
+    let isModeChanging = false;
+
     function setExerciseMode(mode) { // Exported for external use
       appState.exerciseMode = mode;
+      
+      // Tandai bahwa kita sedang berpindah mode untuk memicu animasi khusus
+      isModeChanging = true;
       
       const modes = {
         read: document.getElementById('btn-mode-read'),
@@ -821,6 +923,7 @@
       }
 
       renderQuestion();
+      isModeChanging = false;
     }
 
     let lastDirection = 'next';
@@ -836,9 +939,17 @@
 
       // Apply Transition Animation
       const card = document.getElementById('question-card');
-      card.classList.remove('animate-slide-right', 'animate-slide-left');
+      // Bersihkan kelas animasi sebelumnya
+      card.classList.remove('animate-slide-right', 'animate-slide-left', 'animate-mode-blur');
       void card.offsetWidth; // Trigger reflow
-      card.classList.add(lastDirection === 'next' ? 'animate-slide-right' : 'animate-slide-left');
+
+      // Jika perpindahan disebabkan oleh ganti mode, gunakan animasi blur yang halus
+      if (isModeChanging) {
+        card.classList.add('animate-mode-blur');
+      } else {
+        // Jika perpindahan antar nomor soal, gunakan slide standar
+        card.classList.add(lastDirection === 'next' ? 'animate-slide-right' : 'animate-slide-left');
+      }
 
       updateBookmarkUI();
       
@@ -911,6 +1022,19 @@
         document.getElementById('feedback-text').textContent = data.Feedback || (isCorrect ? "Jawaban yang tepat." : `Jawaban yang benar adalah ${data.Jawaban_Benar}.`);
       } else {
         feedbackArea.classList.add('hidden');
+      }
+
+      // Update Visibilitas Legenda Leitner (Hanya di Mode Baca)
+      const legend = document.getElementById('leitner-legend');
+      if (legend) {
+        if (appState.exerciseMode === 'read') {
+          legend.classList.remove('hidden');
+          // Beri sedikit jeda agar browser me-render elemen sebelum transisi opacity
+          setTimeout(() => legend.classList.remove('opacity-0'), 10);
+        } else {
+          legend.classList.add('opacity-0');
+          setTimeout(() => legend.classList.add('hidden'), 300); // Sesuaikan dengan duration-300
+        }
       }
 
       const optionsContainer = document.getElementById('exercise-options');
@@ -1116,6 +1240,7 @@
     window.nextQuestion = nextQuestion;
     window.submitExerciseResults = submitExerciseResults;
     window.handleAnswerSelection = handleAnswerSelection;
+    window.handleAnswerSelection = handleAnswerSelection;
     window.toggleBookmark = toggleBookmark;
     window.updateBookmarkUI = updateBookmarkUI;
 
@@ -1145,6 +1270,10 @@
       } else {
         await pullSystemDataFromServer();
       }
+
+      // 3. Load saved card theme
+      const savedTheme = localStorage.getItem('meb_card_theme') || 'default';
+      setCardTheme(savedTheme);
 
       renderExerciseSets();
       setupSwipeSupport();

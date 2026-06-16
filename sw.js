@@ -3,20 +3,27 @@ importScripts('./js/dexie.js'); // Assuming you save dexie.js in your js folder
 
 const SW_VERSION = 'v0.9.0';
 const CACHE_NAME = 'meb-cache-v0.9.0';
+// Pastikan semua aset penting untuk offline tercantum di sini
 const urlsToCache = [
   'index.html',
   'latihan.html',
-  'css/style.css',
-  'css/fontawesome.min.css',
-  'js/dexie.js',
-  'fonts/plus-jakarta-sans.woff2',
-  'fonts/noto-sans-arabic.woff2'
+  'css/output.css', // Menggunakan output.css dari build Tailwind
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-    .then(() => console.log(`[SW] ${SW_VERSION} installed.`))
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('[SW] Memulai caching aset...');
+      return Promise.all(
+        urlsToCache.map(url => {
+          return cache.add(url).catch(err => {
+            // Log file yang gagal agar Anda bisa memperbaikinya
+            console.error(`[SW] Gagal men-cache: ${url}. Pastikan file ini ada.`, err);
+          });
+        })
+      );
+    })
+    .then(() => console.log(`[SW] ${SW_VERSION} installation process finished.`))
   );
 });
 
@@ -36,7 +43,8 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
+          // Jangan hapus cache utama yang sedang aktif dan cache media pendukung
+          if (cacheName !== CACHE_NAME && cacheName !== 'meb-media-cache') {
             console.log('[SW] Menghapus cache lama:', cacheName);
             return caches.delete(cacheName);
           }

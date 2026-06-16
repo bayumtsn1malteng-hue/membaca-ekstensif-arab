@@ -20,8 +20,8 @@
 
 import Dexie from './dexie.mjs';
 
-import { apiCall, pullSystemDataFromServer, pullUserKamusFromServer, fetchExerciseData, fetchExerciseScoreHistory } from './user_api.js';
-import { switchView, renderLibrary, updateDashboardStats, setupUserInterface, showModal, showSpinnerButton, toggleDarkMode, renderKamusTable, loadReader, showDictModal, hideDictModal, buildDynamicModeBLayout, loadLeitnerCard, revealLeitnerCard, closeLeitnerSession, filterKamusByBox, toggleAuthMode, filterLibrary, searchLibrary, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, closeModal, toggleMinimalistMode } from './user_ui.js';
+import { apiCall, pullSystemDataFromServer, pullUserKamusFromServer, fetchExerciseData, fetchExerciseScoreHistory, getUniqueSourceTitles } from './user_api.js';
+import { switchView, renderLibrary, updateDashboardStats, setupUserInterface, showModal, updateModalProgress, showSpinnerButton, toggleDarkMode, renderKamusTable, loadReader, showDictModal, hideDictModal, buildDynamicModeBLayout, loadLeitnerCard, revealLeitnerCard, closeLeitnerSession, filterKamusByBox, toggleAuthMode, filterLibrary, searchLibrary, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, closeModal, toggleMinimalistMode, getVocalizedWord, toggleBookmark, updateBookmarkUI, debounce, renderBookmarkedQuestionsList, _searchLibrary } from './user_ui.js';
 import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
 // Import modul lain jika sudah dipisah (Contoh: import { setupUserInterface } from './user_ui.js';)
 
@@ -36,14 +36,15 @@ const isModule = true;
 // ============================================================
 
 export const db = new Dexie("MEB_UserDB");
-db.version(2).stores({
+db.version(3).stores({
   pustaka: "ID_Teks, Seri, Tingkat_Kesulitan, Judul_Teks, Judul_Teks_Arab",
   petaKosakata: "ID_Kosakata, ID_Teks, Kata_Teks_Polos, ID_Kata_Induk",
   kamusUser: "ID_User_Word, ID_User, Kata_Polos, ID_Kata_Induk, Status_Belajar, Tanggal_Update",
   kataInduk: "ID_Kata_Induk, Kata_Induk_Polos",
   sambungan: "ID_Sambungan, Bentuk_Sambungan",
   appLogs: "++id, eventType, timestamp",
-  bookmarks: "id, setId"
+  bookmarks: "id, setId",
+  settings: "key"
 });
 
 let appState = {
@@ -115,13 +116,14 @@ export async function migrateFromLocalStorage() {
  */
 export async function hydrateAppStateFromDB() {
   console.log("[DB] Memulai hidrasi state dari IndexedDB...");
-  const [pustaka, peta, kamus, induk, sambungan, bookmarks] = await Promise.all([
+  const [pustaka, peta, kamus, induk, sambungan, bookmarks, settings] = await Promise.all([
     db.pustaka.toArray(),
     db.petaKosakata.toArray(),
     db.kamusUser.toArray(),
     db.kataInduk.toArray(),
     db.sambungan.toArray(),
-    db.bookmarks.toArray()
+    db.bookmarks.toArray(),
+    db.settings.toArray()
   ]);
   appState.pustaka = pustaka;
   appState.petaKosakata = peta;
@@ -129,6 +131,19 @@ export async function hydrateAppStateFromDB() {
   appState.kataInduk = induk;
   appState.sambungan = sambungan;
   appState.bookmarkedQuestions = bookmarks;
+
+  // Muat pengaturan filter Leitner dari DB jika ada
+  const leitnerSetting = settings.find(s => s.key === 'leitner_filter');
+  if (leitnerSetting) {
+    appState.leitnerFilter = leitnerSetting.value;
+    // Update UI dropdown jika elemen tersedia di DOM
+    const sourceEl = document.getElementById('leitner-filter-source');
+    if (sourceEl) {
+      sourceEl.value = appState.leitnerFilter.source; //
+      handleLeitnerSourceChange(true); // Populate dropdown judul spesifik
+    }
+  }
+
   updateDashboardStats(); // Pastikan statistik terupdate setelah hidrasi
 
   checkLeitnerReminders();
@@ -512,8 +527,13 @@ window.clearKamusOnly = clearKamusOnly;
 window.importLatestBackupFromDrive = importLatestBackupFromDrive;
 window.checkAndAutoRestore = checkAndAutoRestore;
 window.requestNotificationPermission = requestNotificationPermission;
+window.triggerSWUpdate = triggerSWUpdate;
+window.clearMediaCache = clearMediaCache;
 window.importDatabaseFromJson = importDatabaseFromJson;
 window.exportDatabaseToJson = exportDatabaseToJson;
+window.handleLeitnerSourceChange = handleLeitnerSourceChange;
+window.saveLeitnerSettings = saveLeitnerSettings;
+window.resetLeitnerSettings = resetLeitnerSettings;
 
 // Fungsi-fungsi dari user_ui.js yang dipanggil langsung dari HTML
 window.switchView = switchView;
@@ -968,6 +988,127 @@ async function deleteKamusWord(idUserWord) {
 }
 
 /**
+ * Menangani perubahan pada dropdown sumber di modal pengaturan Leitner.
+ * @param {boolean} isInitialLoad - True jika dipanggil saat startup untuk sinkronisasi state ke UI
+ */
+export function handleLeitnerSourceChange(isInitialLoad = false) {
+  const sourceEl = document.getElementById('leitner-filter-source');
+  const group = document.getElementById('leitner-specific-title-group');
+  const selectTitle = document.getElementById('leitner-filter-title');
+
+  if (!sourceEl || !group || !selectTitle) return;
+
+  const source = sourceEl.value;
+
+  if (source === 'all') {
+    group.classList.add('hidden');
+    return;
+  }
+
+  group.classList.remove('hidden');
+  
+  // Efficiency: Ambil data kosakata yang jatuh tempo (Due) hari ini sekali saja
+  const now = new Date();
+  const dueKamusItems = appState.kamusUser.filter(ku => {
+    const reviewDate = new Date(ku.Tanggal_Review_Berikutnya);
+    return ku.Status_Belajar !== 'Known' && reviewDate <= now;
+  });
+  
+  // Hitung total untuk sumber yang dipilih (Reading vs Exercise)
+  const totalSourceCount = dueKamusItems.filter(ku => {
+    const isFromExercise = ku.ID_User_Word.startsWith('VOC-LAT-');
+    return (source === 'reading' && !isFromExercise) || (source === 'exercise' && isFromExercise);
+  }).length;
+  
+  selectTitle.innerHTML = `<option value="all">Semua Judul (${totalSourceCount} kata)</option>`;
+  
+  const { readingTitles, exerciseTitles } = getUniqueSourceTitles();
+  let list = source === 'reading' ? readingTitles : exerciseTitles;
+
+  // Tambahkan jumlah kata ke setiap item dan filter/sort
+  list = list.map(item => {
+    // Hitung jumlah kata per judul menggunakan logika pemetaan yang sama dengan startLeitnerSession
+    const count = dueKamusItems.filter(ku => {
+      const isFromExercise = ku.ID_User_Word.startsWith('VOC-LAT-');
+      if (source === 'reading' && isFromExercise) return false;
+      if (source === 'exercise' && !isFromExercise) return false;
+
+      const mapping = appState.petaKosakata.find(m => m.ID_Kata_Induk === ku.ID_Kata_Induk);
+      return mapping && mapping.ID_Teks === item.id;
+    }).length;
+
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = `${item.title} (${count} kata)`;
+    selectTitle.appendChild(opt);
+  });
+
+  // Jika startup, kembalikan nilai judul spesifik yang tersimpan
+  if (isInitialLoad && appState.leitnerFilter.specificId) {
+    selectTitle.value = appState.leitnerFilter.specificId;
+  }
+}
+
+/**
+ * Menyimpan pengaturan filter Leitner (source & specificId) ke state dan IndexedDB.
+ */
+export async function saveLeitnerSettings() {
+  const sourceEl = document.getElementById('leitner-filter-source');
+  const titleEl = document.getElementById('leitner-filter-title');
+  
+  if (!sourceEl || !titleEl) return;
+
+  const source = sourceEl.value;
+  const specificId = source === 'all' ? 'all' : titleEl.value;
+
+  // Validasi: Jika judul spesifik dipilih, pastikan valid (ada dalam daftar metadata)
+  if (source !== 'all' && specificId !== 'all') {
+    const { readingTitles, exerciseTitles } = getUniqueSourceTitles();
+    const list = source === 'reading' ? readingTitles : exerciseTitles;
+    const isValid = list.some(item => item.id === specificId);
+    
+    if (!isValid) {
+      showModal("Pilihan Tidak Valid", "Judul yang dipilih tidak ditemukan atau belum dimuat sepenuhnya.", "fa-solid fa-triangle-exclamation text-rose-500");
+      return;
+    }
+  }
+
+  appState.leitnerFilter = { source, specificId };
+
+  try {
+    await db.settings.put({ key: 'leitner_filter', value: appState.leitnerFilter });
+    document.getElementById('leitner-settings-modal').classList.add('hidden');
+    showModal("Pengaturan Disimpan", "Filter sesi review telah diperbarui secara permanen.", "fa-solid fa-circle-check text-emerald-500");
+  } catch (err) {
+    console.error("[DB] Gagal menyimpan pengaturan:", err);
+    showModal("Gagal Menyimpan", "Terjadi kendala saat mengakses database lokal.", "fa-solid fa-triangle-exclamation text-rose-500");
+  }
+}
+
+/**
+ * Mengembalikan pengaturan filter Leitner ke nilai default (Semua Kosakata).
+ */
+export async function resetLeitnerSettings() {
+  appState.leitnerFilter = { source: 'all', specificId: 'all' };
+
+  try {
+    await db.settings.put({ key: 'leitner_filter', value: appState.leitnerFilter });
+    
+    // Sinkronisasi UI
+    const sourceEl = document.getElementById('leitner-filter-source');
+    if (sourceEl) {
+      sourceEl.value = 'all';
+      handleLeitnerSourceChange(); // Ini akan menyembunyikan dropdown judul spesifik
+    }
+    
+    showModal("Filter Direset", "Pengaturan telah dikembalikan ke kondisi awal (Semua Kosakata).", "fa-solid fa-rotate-left text-brand-600");
+  } catch (err) {
+    console.error("[DB] Gagal mereset pengaturan:", err);
+    showModal("Gagal Mereset", "Terjadi kendala saat mengakses database lokal.", "fa-solid fa-circle-xmark text-rose-500");
+  }
+}
+
+/**
  * Memulai sesi review flashcard Leitner
  */
 function startLeitnerSession() {
@@ -1071,6 +1212,114 @@ async function submitLeitnerResult(isCorrect) {
       await db.kamusUser.put(appState.kamusUser[itemIndex]);
     }
     nextLeitnerCard();
+  }
+}
+
+/**
+ * Memicu pemeriksaan pembaruan Service Worker secara manual.
+ */
+export async function triggerSWUpdate() {
+  if (!('serviceWorker' in navigator)) {
+    showModal("Tidak Didukung", "Browser Anda tidak mendukung Service Worker.", "fa-solid fa-circle-xmark text-rose-500");
+    return;
+  }
+
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (registration) {
+    showModal("Mencari Pembaruan", "Sedang memeriksa versi terbaru di server...", "fa-solid fa-sync animate-spin text-brand-600");
+    try {
+      await registration.update();
+      // Jika ada update, listener di index.html akan menangani munculnya modal konfirmasi update.
+      // Jika tidak ada update dalam 2.5 detik, beri tahu user.
+      setTimeout(() => {
+        if (!registration.installing && !registration.waiting) {
+          showModal("Aplikasi Terkini", "Anda sudah menggunakan versi terbaru dari MEB Arab.", "fa-solid fa-circle-check text-emerald-500");
+        }
+      }, 2500);
+    } catch (err) {
+      console.error("[SW] Gagal memeriksa update:", err);
+      showModal("Gagal Memeriksa", "Terjadi kesalahan koneksi saat memeriksa pembaruan.", "fa-solid fa-triangle-exclamation text-rose-500");
+    }
+  }
+}
+
+/**
+ * Menghapus seluruh cache media (gambar/ilustrasi) dari Service Worker.
+ */
+export async function clearMediaCache() {
+  const confirmClear = confirm("Apakah Anda yakin ingin menghapus semua gambar pustaka yang diunduh untuk offline? Ini akan mengosongkan ruang penyimpanan.");
+  if (!confirmClear) return;
+
+  showModal("Menghapus Cache Media", "Sedang membersihkan cache gambar...", "fa-solid fa-trash-can animate-spin text-rose-500");
+  try {
+    if ('caches' in window) {
+      const mediaCache = await caches.open('meb-media-cache');
+      const keys = await mediaCache.keys();
+      await Promise.all(keys.map(request => mediaCache.delete(request)));
+      showModal("Cache Dihapus", "Seluruh cache gambar media berhasil dihapus.", "fa-solid fa-check-circle text-emerald-500");
+    } else {
+      showModal("Tidak Didukung", "Browser Anda tidak mendukung Cache Storage API.", "fa-solid fa-exclamation-triangle text-amber-500");
+    }
+  } catch (err) {
+    showModal("Gagal Menghapus", `Terjadi kesalahan: ${err.message}`, "fa-solid fa-times-circle text-rose-500");
+  }
+}
+
+/**
+ * Memaksa sinkronisasi seluruh data ke IndexedDB agar siap digunakan offline.
+ * Termasuk mengunduh aset media (gambar) ke dalam Cache Storage.
+ */
+export async function downloadAllPustakaForOffline() {
+  if (!appState.currentUser || appState.isMockMode) {
+    showModal("Akses Ditolak", "Login diperlukan untuk mengunduh pustaka secara offline.", "fa-solid fa-user-lock text-rose-500");
+    return;
+  }
+
+  showModal("Download Offline", "Memulai sinkronisasi data pustaka...", "fa-solid fa-cloud-arrow-down text-brand-600");
+  updateModalProgress(10);
+
+  try {
+    // Tahap 1: Sinkronisasi data sistem (Naskah & Peta Kosakata)
+    showModal("Download Offline", "Sedang mengunduh daftar pustaka...", "fa-solid fa-database animate-pulse text-brand-600");
+    await pullSystemDataFromServer();
+    updateModalProgress(30);
+
+    // Tahap 2: Sinkronisasi kamus personal
+    showModal("Download Offline", "Sedang menyelaraskan kamus personal Anda...", "fa-solid fa-user-graduate animate-pulse text-brand-600");
+    await pullUserKamusFromServer();
+    updateModalProgress(50);
+
+    // Tahap 3: Download Aset Media (Gambar/Ilustrasi)
+    showModal("Download Offline", "Mengunduh aset gambar dan media pendukung...", "fa-solid fa-image animate-pulse text-brand-600");
+    
+    const mediaUrls = [];
+    appState.pustaka.forEach(item => {
+      if (item.Gambar_Teks && item.Gambar_Teks.startsWith('http')) {
+        mediaUrls.push(item.Gambar_Teks);
+      }
+    });
+
+    const uniqueUrls = [...new Set(mediaUrls)];
+    if (uniqueUrls.length > 0) {
+      const mediaCache = await caches.open('meb-media-cache');
+      let downloaded = 0;
+      for (const url of uniqueUrls) {
+        try {
+          await mediaCache.add(url);
+        } catch (e) {
+          console.warn(`[Offline] Gagal mengunduh aset: ${url}`, e);
+        }
+        downloaded++;
+        const progress = 50 + ((downloaded / uniqueUrls.length) * 50);
+        updateModalProgress(Math.floor(progress));
+      }
+    }
+    
+    updateModalProgress(100);
+    showModal("Selesai", "Seluruh naskah dan media berhasil disimpan secara offline.", "fa-solid fa-circle-check text-emerald-500");
+  } catch (err) {
+    console.error("[Offline] Gagal download:", err);
+    showModal("Gagal", "Kendala jaringan terdeteksi. Silakan coba lagi nanti.", "fa-solid fa-wifi text-rose-500");
   }
 }
 

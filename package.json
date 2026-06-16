@@ -4,8 +4,9 @@
   "description": "Membaca Ekstensif Bertingkat (MEB) Arab",
   "scripts": {
     "sync-sw": "node bump-sw.js",
-    "build:css": "tailwindcss -i ./css/input.css -o ./css/style.css --minify && npm run sync-sw",
-    "watch:css": "tailwindcss -i ./css/input.css -o ./css/style.css --watch",
+    "build:css": "tailwindcss -i ./css/input.css -o ./css/output.css --minify && npm run sync-sw",
+    "watch:css": "tailwindcss -i ./css/input.css -o ./css/output.css --watch",
+    "build": "npm run build:css",
     "postinstall": "node copy-libs.js"
   },
   "devDependencies": {

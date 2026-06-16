@@ -7,7 +7,7 @@
  */
 
 import { appState, db } from './user_app.js';
-import { renderLibrary, updateDashboardStats, renderKamusTable, showModal } from './user_ui.js';
+import { renderLibrary, updateDashboardStats, renderKamusTable, showModal } from './user_ui.js'; //
 /**
  * Melakukan pemanggilan POST API secara aman dengan metode CORS dan retries + exponential backoff
  * @param {Object} payload - Objek data payload yang akan dikirim
@@ -161,4 +161,25 @@ export async function pullUserKamusFromServer() {
   } finally {
     isUserKamusSyncing = false;
   }
+}
+
+/**
+ * Mengambil daftar judul unik dari pustaka dan himpunan latihan yang tersimpan di appState.
+ * Digunakan untuk mengisi dropdown filter pada pengaturan Leitner.
+ * @returns {Object} Objek berisi array judul pustaka dan judul latihan.
+ */
+export function getUniqueSourceTitles() {
+  // Mapping judul dari Pustaka Bacaan
+  const readingTitles = appState.pustaka.map(item => ({
+    id: item.ID_Teks,
+    title: item.Judul_Teks || item.Terjemah_Judul_Indonesia || item.Judul_Teks_Arab || "Tanpa Judul"
+  }));
+
+  // Mapping judul dari Himpunan Latihan
+  const exerciseTitles = appState.judulHimpunanLatihan.map(item => ({
+    id: item.ID_Himpunan_Latihan,
+    title: item.Judul_Himpunan_Latihan || "Latihan Tanpa Judul"
+  }));
+
+  return { readingTitles, exerciseTitles };
 }

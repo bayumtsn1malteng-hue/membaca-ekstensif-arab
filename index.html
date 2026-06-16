@@ -10,9 +10,34 @@
   <meta name="theme-color" content="#14b8a6">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png"> <!-- TODO: Ganti ikon PWA -->
 
-  <!-- Local CSS & Icons -->
-  <link rel="stylesheet" href="css/fontawesome.min.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
+  <!-- Local Tailwind Build with CDN Fallback -->
+  <link rel="stylesheet" href="css/output.css" id="tailwind-link" onerror="loadTailwindFallback()">
+  <script>
+    function loadTailwindFallback() {
+      console.warn("Aset CSS lokal (output.css) tidak ditemukan. Menggunakan CDN Tailwind sebagai cadangan...");
+      const script = document.createElement('script');
+      script.src = 'https://cdn.tailwindcss.com';
+      script.onload = () => {
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                brand: {
+                  50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a', 950: '#042f2e',
+                },
+              },
+            },
+          },
+        };
+      };
+      document.head.appendChild(script);
+    }
+  </script>
+
   <style>
     /* Spasi baris vertikal ekstra longgar khusus untuk harakat Arab yang sangat padat */
     .arabic-text {
@@ -106,7 +131,7 @@
   </header>
 
   <!-- SIDEBAR DESKTOP (Hanya muncul di layar sedang ke atas) -->
-  <aside class="hidden md:flex flex-col fixed top-0 left-0 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 p-5 justify-between transition-all duration-300 ease-in-out">
+  <aside class="hidden md:flex max-md:!hidden flex-col fixed top-0 left-0 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 p-5 justify-between transition-all duration-300 ease-in-out">
     <div class="space-y-6">
       <!-- Logo Brand -->
       <div class="flex items-center gap-3">
@@ -232,7 +257,7 @@
         </form>
 
         <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500">
-          <p id="auth-toggle-text">Belum punya akun? <a href="#" onclick="toggleAuthMode(true)" class="text-brand-600 dark:text-brand-400 font-bold hover:underline">Daftar Baru</a></p>
+          <p id="auth-toggle-text">Belum punya akun? <a href="#" onclick="window.toggleAuthMode(true)" class="text-brand-600 dark:text-brand-400 font-bold hover:underline">Daftar Baru</a></p>
           <div class="mt-4">
             <button onclick="bypassLogin()" class="text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 underline font-semibold">Bypass dengan Mode Offline (Mock Data)</button>
           </div>
@@ -347,10 +372,10 @@
 
           <!-- Terjemahan Tersembunyi -->
           <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button onclick="toggleTranslation()" class="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-2 mb-4 hover:opacity-80 transition">
+            <button onclick="window.toggleTranslation()" class="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-2 mb-4 hover:opacity-80 transition">
               <i class="fa-regular fa-eye"></i> <span id="toggle-trans-label">Tampilkan Terjemahan Indonesia</span>
             </button>
-            <div id="reader-translation" class="hidden text-xs sm:text-sm text-slate-655 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 leading-relaxed italic">
+            <div id="reader-translation" class="hidden text-xs sm:text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 leading-relaxed italic">
               <!-- Terjemah lengkap -->
             </div>
           </div>
@@ -414,10 +439,10 @@
           </button>
           <button onclick="filterKamusByBox(3)" class="box-btn p-4 rounded-2xl border border-yellow-200 dark:border-yellow-950 text-center bg-gradient-to-br from-yellow-50/50 to-white dark:from-slate-900/40 dark:to-slate-900 transition flex flex-col items-center hover:shadow-md hover:border-yellow-400 outline-none">
             <span class="text-[10px] font-bold text-yellow-650">Box 3</span>
-            <span class="text-2xl font-black mt-1 text-yellow-700 dark:text-yellow-400" id="count-box-3">0</span>
+            <span class="text-2xl font-black mt-1 text-yellow-600 dark:text-yellow-400" id="count-box-3">0</span>
             <span class="text-[8px] uppercase tracking-wider text-yellow-500 mt-1 font-extrabold">4 Hari Sekali</span>
           </button>
-          <button onclick="filterKamusByBox(4)" class="box-btn p-4 rounded-2xl border border-sky-200 dark:border-sky-950 text-center bg-gradient-to-br from-sky-550/50 to-white dark:from-slate-900/40 dark:to-slate-900 transition flex flex-col items-center hover:shadow-md hover:border-sky-400 outline-none">
+          <button onclick="filterKamusByBox(4)" class="box-btn p-4 rounded-2xl border border-sky-200 dark:border-sky-950 text-center bg-gradient-to-br from-sky-500/50 to-white dark:from-slate-900/40 dark:to-slate-900 transition flex flex-col items-center hover:shadow-md hover:border-sky-400 outline-none">
             <span class="text-[10px] font-bold text-sky-500">Box 4</span>
             <span class="text-2xl font-black mt-1 text-sky-700 dark:text-sky-400" id="count-box-4">0</span>
             <span class="text-[8px] uppercase tracking-wider text-sky-400 mt-1 font-extrabold">8 Hari Sekali</span>
@@ -448,7 +473,7 @@
                   <th class="px-6 py-4 text-right">Kosakata Arab</th>
                   <th class="px-6 py-4">Arti / Catatan Kustom</th>
                   <th class="px-6 py-4">Letak Box</th>
-                  <th class="px-6 py-4">Tanggal Review</th>
+                  <th class="px-6 py-4 text-center">Tanggal Review</th>
                   <th class="px-6 py-4">Streak</th>
                   <th class="px-6 py-4 text-center">Tindakan</th>
                 </tr>
@@ -499,6 +524,15 @@
             <button onclick="requestNotificationPermission()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md">
               <i class="fa-solid fa-bell mr-1"></i> Aktifkan Notifikasi
             </button>
+            <button onclick="clearMediaCache()" class="px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-trash-can mr-1"></i> Hapus Cache Media
+            </button>
+            <button onclick="downloadAllPustakaForOffline()" class="px-4 py-2.5 bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800 text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Download Pustaka Offline
+            </button>
+            <button onclick="triggerSWUpdate()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-arrows-rotate mr-1"></i> Periksa Pembaruan Sistem
+            </button>
             <button onclick="clearKamusOnly()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-md">
               <i class="fa-solid fa-eraser mr-1"></i> Reset Kamus Saja
             </button>
@@ -514,10 +548,10 @@
           <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-150 dark:border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="relative flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
               </span>
-              <span class="text-xs font-bold text-slate-750 dark:text-slate-300">Mode Kerja Sistem Saat Ini:</span>
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Mode Kerja Sistem Saat Ini:</span>
             </div>
             <span class="text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 uppercase tracking-wide" id="connection-status-tag">Mock Data (Offline Mode)</span>
           </div>
@@ -530,7 +564,23 @@
          MODAL DIALOG (NON-BLOCKING)
          ========================================== -->
     <div id="custom-modal" onclick="if(event.target === this) closeModal()" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
-...
+      <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-[bounce_0.3s_ease-in-out_1]">
+        <div class="text-center" id="modal-body">
+          <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-3"></i>
+          <h3 class="text-base font-bold" id="modal-title">Operasi Sukses</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="modal-message">Pesan notifikasi.</p>
+          <!-- UI Progress Bar di Modal -->
+          <div id="modal-progress-container" class="mt-5 hidden">
+            <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div id="modal-progress-bar" class="h-full bg-brand-600 transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button id="modal-close-btn" onclick="closeModal()" class="w-full py-3 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
+          <button id="modal-retry-btn" class="hidden w-1/2 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition">Coba Lagi</button>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL: LEITNER SETTINGS -->
@@ -564,20 +614,6 @@
     </div>
 
     <!-- MODAL: LEITNER REVIEW CARD -->
-      <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-[bounce_0.3s_ease-in-out_1]">
-        <div class="text-center" id="modal-body">
-          <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-3"></i>
-          <h3 class="text-base font-bold" id="modal-title">Operasi Sukses</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="modal-message">Pesan notifikasi.</p>
-        </div>
-        <div class="flex gap-3 mt-5">
-          <button id="modal-close-btn" onclick="closeModal()" class="w-full py-3 bg-slate-900 dark:bg-slate-850 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
-          <button id="modal-retry-btn" class="hidden w-1/2 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition">Coba Lagi</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL: LEITNER REVIEW CARD -->
     <div id="leitner-modal" onclick="if(event.target === this) closeLeitnerSession()" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
       <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-150 dark:border-slate-850 pb-3 space-y-6">
         <div class="flex justify-between items-center text-xs border-b border-slate-100 dark:border-slate-850 pb-3">
@@ -603,15 +639,15 @@
           </button>
 
           <div id="leitner-actions" class="hidden grid grid-cols-2 gap-3">
-            <button onclick="submitLeitnerResult(false)" class="py-3 bg-red-50 hover:bg-red-150/40 text-red-600 border border-red-200 text-xs font-bold rounded-xl transition">
+            <button onclick="window.submitLeitnerResult(false)" class="py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-circle-xmark mr-1.5"></i> Salah / Lupa
             </button>
-            <button onclick="submitLeitnerResult(true)" class="py-3 bg-emerald-50 hover:bg-emerald-150/40 text-emerald-600 border border-emerald-200 text-xs font-bold rounded-xl transition">
+            <button onclick="window.submitLeitnerResult(true)" class="py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-circle-check mr-1.5"></i> Benar / Hafal
             </button>
           </div>
 
-          <button onclick="closeLeitnerSession()" class="w-full py-2 text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 text-xs font-bold transition">
+          <button onclick="window.closeLeitnerSession()" class="w-full py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold transition">
             Hentikan Sesi Ujian
           </button>
         </div>
@@ -684,7 +720,7 @@
             <button onclick="hideDictModal()" class="w-1/3 border border-slate-200 dark:border-slate-750 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold py-3 rounded-xl transition">
               Batal <!-- Ini juga harus memanggil hideDictModal() -->
             </button>
-            <button onclick="saveWordToPersonalKamus()" id="btn-save-vocab" class="w-2/3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-850 dark:hover:bg-slate-800 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-slate-950/10">
+            <button onclick="saveWordToPersonalKamus()" id="btn-save-vocab" class="w-2/3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-slate-950/10">
               <i class="fa-solid fa-bookmark text-[10px]"></i> Masukkan ke Kamus Leitner
             </button>
           </div>
@@ -699,6 +735,21 @@
     </footer>
   </div>
 
+  <!-- Script for Mobile Profile Toggle -->
+  <script>
+    function toggleMobileProfileMenu() {
+      const dropdown = document.getElementById('mobile-profile-dropdown');
+      dropdown.classList.toggle('hidden');
+      
+      // Close if clicked outside
+      document.addEventListener('click', function closeMenu(e) {
+        if (!e.target.closest('#header-avatar') && !e.target.closest('#mobile-profile-dropdown')) {
+          dropdown.classList.add('hidden');
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }
+  </script>
   <!-- ==========================================
        LOGIKA JAVASCRIPT MODULAR
        Urutan pemuatan penting: utils → api → ui → app
@@ -757,10 +808,78 @@
   <!-- Modul Utama Aplikasi (State, Auth, Bisnis Logik) -->
   <script src="js/user_app.js" type="module"></script>
 
+  <!-- Global exposure for dynamic HTML onclick handlers and cross-module access -->
+  <script type="module">
+    import { 
+      switchView, toggleAuthMode, filterLibrary, searchLibrary, toggleMinimalistMode, 
+      adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, 
+      filterKamusByBox, closeModal, closeLeitnerSession, revealLeitnerCard, 
+      showDictModal, hideDictModal, toggleBookmark, updateBookmarkUI, renderBookmarkedQuestionsList
+    } from './js/user_ui.js';
+    import { 
+      logout, handleAuthSubmit, bypassLogin, handleAvatarClick, loadMockData, 
+      handleWordClick, markReadAsFinished, saveWordToPersonalKamus, deleteKamusWord, 
+      startLeitnerSession, submitLeitnerResult, nextLeitnerCard, saveApiEndpoint, 
+      testApiConnection, uploadBackupToDrive, clearAllLocalData, clearKamusOnly, 
+      importLatestBackupFromDrive, exportDatabaseToJson, importDatabaseFromJson, 
+      requestNotificationPermission, triggerSWUpdate, downloadAllPustakaForOffline, clearMediaCache,
+      handleLeitnerSourceChange, saveLeitnerSettings, resetLeitnerSettings
+    } from './js/user_app.js';
+
+    // Expose functions from user_ui.js
+    window.switchView = switchView;
+    window.toggleAuthMode = toggleAuthMode;
+    window.filterLibrary = filterLibrary;
+    window.searchLibrary = searchLibrary; // The debounced version
+    window.toggleMinimalistMode = toggleMinimalistMode;
+    window.adjustReaderFont = adjustReaderFont;
+    window.resetReaderSettings = resetReaderSettings;
+    window.adjustReaderLineHeight = adjustReaderLineHeight;
+    window.toggleTranslation = toggleTranslation;
+    window.filterKamusByBox = filterKamusByBox;
+    window.closeModal = closeModal;
+    window.closeLeitnerSession = closeLeitnerSession;
+    window.revealLeitnerCard = revealLeitnerCard;
+    window.showDictModal = showDictModal;
+    window.hideDictModal = hideDictModal;
+    window.toggleBookmark = toggleBookmark;
+    window.updateBookmarkUI = updateBookmarkUI;
+    window.renderBookmarkedQuestionsList = renderBookmarkedQuestionsList;
+
+    // Expose functions from user_app.js
+    window.logout = logout;
+    window.handleAuthSubmit = handleAuthSubmit;
+    window.bypassLogin = bypassLogin;
+    window.handleAvatarClick = handleAvatarClick;
+    window.loadMockData = loadMockData;
+    window.handleWordClick = handleWordClick;
+    window.markReadAsFinished = markReadAsFinished;
+    window.saveWordToPersonalKamus = saveWordToPersonalKamus;
+    window.deleteKamusWord = deleteKamusWord;
+    window.startLeitnerSession = startLeitnerSession;
+    window.submitLeitnerResult = submitLeitnerResult;
+    window.nextLeitnerCard = nextLeitnerCard;
+    window.saveApiEndpoint = saveApiEndpoint;
+    window.testApiConnection = testApiConnection;
+    window.uploadBackupToDrive = uploadBackupToDrive;
+    window.clearAllLocalData = clearAllLocalData;
+    window.clearKamusOnly = clearKamusOnly;
+    window.importLatestBackupFromDrive = importLatestBackupFromDrive;
+    window.exportDatabaseToJson = exportDatabaseToJson;
+    window.importDatabaseFromJson = importDatabaseFromJson;
+    window.requestNotificationPermission = requestNotificationPermission;
+    window.triggerSWUpdate = triggerSWUpdate;
+    window.downloadAllPustakaForOffline = downloadAllPustakaForOffline;
+    window.clearMediaCache = clearMediaCache;
+    window.handleLeitnerSourceChange = handleLeitnerSourceChange;
+    window.saveLeitnerSettings = saveLeitnerSettings;
+    window.resetLeitnerSettings = resetLeitnerSettings;
+  </script>
+
   <!-- Inisialisasi Aplikasi -->
   <script type="module"> 
     import { appState, loadMockData, migrateFromLocalStorage, hydrateAppStateFromDB, checkAndAutoRestore } from './js/user_app.js';
-    import { setupUserInterface, switchView, renderBookmarkedQuestionsList } from './js/user_ui.js';
+    import { setupUserInterface, switchView } from './js/user_ui.js';
     import { pullSystemDataFromServer, pullUserKamusFromServer } from './js/user_api.js';
 
     window.addEventListener('load', async () => {
@@ -768,7 +887,9 @@
       await migrateFromLocalStorage();
       // Hidrasi state dari database lokal agar aplikasi terasa instan
       await hydrateAppStateFromDB();
-      renderBookmarkedQuestionsList(); // Initial render of bookmarked questions
+      if (window.renderBookmarkedQuestionsList) {
+        window.renderBookmarkedQuestionsList(); // Initial render of bookmarked questions
+      }
       // Cek apakah perlu restore otomatis (IndexedDB kosong tapi login aktif)
       await checkAndAutoRestore();
 
