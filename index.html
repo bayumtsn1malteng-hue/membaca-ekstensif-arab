@@ -1,9 +1,9 @@
-﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="id" class="scroll-smooth h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Membaca Ekstensif Bertingkat (MEB) - User v0.9.0-alpha</title>
+  <title>Membaca Ekstensif Bertingkat (MEB) - User v0.9.1-alpha</title>
 
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="manifest.json">
@@ -13,8 +13,6 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Local Tailwind Build with CDN Fallback -->
-  <link rel="stylesheet" href="css/output.css" id="tailwind-link" onerror="loadTailwindFallback()">
   <script>
     function loadTailwindFallback() {
       console.warn("Aset CSS lokal (output.css) tidak ditemukan. Menggunakan CDN Tailwind sebagai cadangan...");
@@ -37,6 +35,8 @@
       document.head.appendChild(script);
     }
   </script>
+  <!-- Local Tailwind Build with CDN Fallback -->
+  <link rel="stylesheet" href="css/output.css" id="tailwind-link" onerror="loadTailwindFallback()">
 
   <style>
     /* Spasi baris vertikal ekstra longgar khusus untuk harakat Arab yang sangat padat */
@@ -107,7 +107,7 @@
       </div>
       <div>
         <h1 class="text-xs font-bold text-slate-900 dark:text-white leading-none">MEB Arab</h1>
-        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">v0.9.0-alpha</span>
+        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">v0.9.1-alpha</span>
       </div>
     </div>
     <div class="flex items-center gap-2">
@@ -140,7 +140,7 @@
         </div>
         <div>
           <h1 class="text-sm font-bold text-slate-900 dark:text-white leading-none">MEB Arab</h1>
-          <span class="text-[9px] text-brand-600 dark:text-brand-400 font-bold tracking-wider uppercase">v0.9.0-alpha</span>
+          <span class="text-[9px] text-brand-600 dark:text-brand-400 font-bold tracking-wider uppercase">v0.9.1-alpha</span>
         </div>
       </div>
 
@@ -408,20 +408,6 @@
             <button onclick="startLeitnerSession()" class="flex-grow md:flex-initial px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center justify-center gap-3">
               <i class="fa-solid fa-clone"></i> MULAI REVIEW
             </button>
-          </div>
-        </div>
-
-        <!-- Daftar Soal Sulit (Bookmarked Questions) -->
-        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white"><i class="fa-solid fa-bookmark text-amber-500"></i> Daftar Soal Sulit</h2>
-            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg text-slate-500 font-bold" id="bookmarked-count-badge">0 Soal</span>
-          </div>
-          <div id="bookmarked-questions-list" class="space-y-4">
-            <div class="col-span-full text-center py-8 text-slate-400 dark:text-slate-500">
-              <i class="fa-regular fa-bookmark text-3xl mb-2 opacity-50 block"></i>
-              <p class="text-xs">Belum ada soal yang ditandai sebagai sulit.</p>
-            </div>
           </div>
         </div>
 
@@ -731,7 +717,7 @@
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-[11px] text-slate-500">
       <p>© 2026 Membaca Ekstensif Bertingkat (MEB). Dilisensikan untuk E-Reader Pribadi.</p>
-      <a href="https://bayumtsn1malteng-hue.github.io/membaca-ekstensif-arab/admin/login.html"><p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.8.8-alpha</p></a>
+      <a href="https://bayumtsn1malteng-hue.github.io/membaca-ekstensif-arab/admin/login.html"><p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.9.1-alpha</p></a>
     </footer>
   </div>
 

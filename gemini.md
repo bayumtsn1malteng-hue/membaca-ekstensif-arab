@@ -1,6 +1,6 @@
 # Rencana Kerja Migrasi Storage: LocalStorage ke IndexedDB (Dexie.js)
-**Versi Dokumen:** v1.2.0
-**Target:** Meningkatkan kapasitas penyimpanan dan performa aplikasi MEB Arab.
+**Versi Dokumen:** v1.3.0
+**Target:** Optimalisasi PWA, Latihan Terpadu, dan Sinkronisasi Cloud.
 
 ## 1. Tujuan Utama
 - **Kapasitas:** Mengatasi batasan 5MB localStorage untuk menampung ribuan peta kosakata.
@@ -29,10 +29,11 @@
 - [ ] Update fungsi simpan/hapus kata agar berinteraksi langsung dengan Dexie.
 
 ### Fase 4: Pengayaan Fitur Latihan & Leitner (v0.9.0)
-- [ ] **Mode Latihan Terpadu:** Implementasi Mode Baca, Latihan, dan Tantangan di `latihan.html`.
-- [ ] **Filter Leitner Cerdas:** Menambahkan pengaturan sumber kosakata (Pustaka vs Latihan) sebelum memulai sesi.
-- [ ] **Minimalist UI (Focus Mode):** Menghilangkan gangguan visual (header/footer) saat berinteraksi dengan konten utama.
-- [ ] **Optimasi Mobile:** Memperbaiki interaksi avatar mobile dan keterbacaan font Noto Arabic.
+- [x] **Mode Latihan Terpadu:** Implementasi Mode Baca, Latihan, dan Tantangan di `latihan.html`.
+- [x] **Filter Leitner Cerdas:** Menambahkan pengaturan sumber kosakata (Pustaka vs Latihan) sebelum memulai sesi.
+- [x] **Minimalist UI (Focus Mode):** Menghilangkan gangguan visual (header/footer) saat berinteraksi dengan konten utama.
+- [x] **Optimasi Mobile:** Memperbaiki interaksi avatar mobile dan keterbacaan font Noto Arabic.
+- [x] **Akses Offline Total:** Implementasi unduh media/gambar pustaka ke cache storage (v0.9.1).
 - [ ] **Visualisasi & Persistensi:** Menambahkan Pie Chart hasil latihan dan fitur resume sesi (v0.9.1).
 - [ ] **Bookmark Soal & Review Mode:** Implementasi fitur bookmark soal dan mode review khusus di `latihan.html` serta daftar di `index.html` (v0.9.2).
 
@@ -40,7 +41,7 @@
 ... (tetap)
 
 ## 5. Aturan Versi
-- v0.9.x-alpha: Fokus pada UI Minimalis dan Pemisahan Mode Latihan.
+- Selalu naikkan versi alpha setiap kali ada perubahan minor/patch
 
 ## 6. Aturan Pengembangan
 - Prioritas: Android kelas menengah ke bawah (Low-latency, Touch-friendly).

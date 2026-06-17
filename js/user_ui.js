@@ -733,6 +733,12 @@ export function revealLeitnerCard() {
 export async function closeLeitnerSession() {
   document.getElementById('leitner-modal').classList.add('hidden');
 
+  if (!appState.currentUser || !appState.gasEndpoint || appState.isMockMode) {
+    // If no current user, no endpoint, or in mock mode, don't attempt to send to backend
+    showModal("Latihan Selesai!", "Sesi hafalan Spaced Repetition selesai (Mode Offline/Guest).", "fa-solid fa-award text-teal-600");
+    return;
+  }
+
   // Bulk submit results if not in mock mode and there are pending results
   if (!appState.isMockMode && appState.leitnerReviewResults.length > 0) {
     showModal("Mengirim Hasil Latihan", "Mengirimkan hasil sesi Leitner Anda ke server...", "fa-solid fa-cloud-arrow-up animate-pulse text-brand-600");
@@ -743,7 +749,7 @@ export async function closeLeitnerSession() {
         reviews: appState.leitnerReviewResults // Array of { idUserWord, isCorrect }
       });
 
-      console.log("[Sync] Response from backend:", res);
+      console.log("[Leitner] Backend response for bulk review:", res);
 
       // Cek sukses dengan lebih fleksibel (handle case-insensitive dan berbagai format GAS)
       const isSuccess = res && (res.success === true || (res.status && res.status.toLowerCase() === "success") || res.success === "true");
@@ -756,10 +762,12 @@ export async function closeLeitnerSession() {
         showModal("Gagal Sinkronisasi", res.error || "Terjadi kesalahan saat mengirim hasil sesi.", "fa-solid fa-circle-xmark text-rose-500");
       }
     } catch (err) {
+      console.error("[Leitner] Error during bulk review API call:", err);
       showModal("Kesalahan Koneksi", "Gagal menghubungi server untuk mengirim hasil sesi: " + err.toString(), "fa-solid fa-triangle-exclamation text-amber-500");
     } finally {
       // Ensure modal is closed after showing result, or after a short delay
       setTimeout(closeModal, 3000); // Close after 3 seconds
+      console.log("[Leitner] Bulk review attempt finished.");
     }
   } else {
     // If no pending results or in mock mode, just show session finished message
@@ -840,6 +848,12 @@ export function showModal(title, message, iconClass = "fa-solid fa-circle-check 
   const closeBtn = document.getElementById('modal-close-btn');
   const modalContainer = document.getElementById('custom-modal');
   const progressContainer = document.getElementById('modal-progress-container');
+
+  if (!titleEl || !messageEl || !bodyEl || !modalContainer) {
+    console.error("One or more modal elements not found in DOM when calling showModal!", { titleEl, messageEl, bodyEl, modalContainer });
+    console.trace(); // Log the call stack
+    return; // Prevent further errors
+  }
 
   if (titleEl) titleEl.textContent = title;
   if (messageEl) messageEl.textContent = message;
@@ -988,29 +1002,42 @@ export function toggleMinimalistMode(isOn) {
 
 /**
  * Merender daftar soal yang di-bookmark di halaman Kamus (index.html)
+ * @param {Array} overrideList - List soal bookmark untuk ditampilkan (untuk filter pencarian)
  */
-export function renderBookmarkedQuestionsList() {
+let currentBookmarkCategory = 'semua';
+
+export function renderBookmarkedQuestionsList(overrideList = null) {
   const container = document.getElementById('bookmarked-questions-list');
   if (!container) return;
 
   container.innerHTML = ''; // Clear previous content
   
-  const badge = document.getElementById('bookmarked-count-badge');
-  if (badge) badge.textContent = `${appState.bookmarkedQuestions.length} Soal`;
+  let list = overrideList || appState.bookmarkedQuestions;
 
-  if (appState.bookmarkedQuestions.length === 0) {
+  // Terapkan filter kategori jika bukan 'semua'
+  if (!overrideList && currentBookmarkCategory !== 'semua') {
+    list = list.filter(b => b.category === currentBookmarkCategory);
+  }
+
+  const badge = document.getElementById('bookmarked-count-badge');
+  if (badge) badge.textContent = `${list.length} Soal`;
+
+  if (list.length === 0) {
     container.innerHTML = `
-      <div class="col-span-full text-center py-8 text-slate-400 dark:text-slate-500">
+      <div class="w-full flex-shrink-0 text-center py-8 text-slate-400 dark:text-slate-500 italic">
         <i class="fa-regular fa-bookmark text-3xl mb-2 opacity-50 block"></i>
-        <p class="text-xs">Belum ada soal yang ditandai sebagai sulit.</p>
+        <p class="text-xs">${overrideList || currentBookmarkCategory !== 'semua' ? 'Tidak ada soal yang cocok dengan filter ini.' : 'Belum ada soal yang ditandai sebagai sulit.'}</p>
       </div>
     `;
     return;
   }
 
-  appState.bookmarkedQuestions.forEach(bookmark => {
+  list.forEach((bookmark, index) => {
     const item = document.createElement('div');
-    item.className = "bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col gap-3";
+    // Tambahkan data-id agar mudah dicari oleh fungsi shake
+    item.setAttribute('data-bookmark-id', bookmark.id);
+    item.className = "w-full max-h-[500px] p-4 rounded-2xl border border-slate-150 dark:border-slate-800 hover:border-brand-500 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex flex-col gap-3 animate-card-entrance bg-white dark:bg-slate-900 relative";
+    item.style.animationDelay = `${index * 100}ms`;
     
     // Escape single quotes for the onclick string to prevent syntax errors
     const safeTitle = (bookmark.setTitle || '').replace(/'/g, "\\'");
@@ -1018,18 +1045,67 @@ export function renderBookmarkedQuestionsList() {
 
     item.innerHTML = `
       <div class="flex items-center justify-between">
-        <span class="text-[10px] font-bold text-slate-400 uppercase">${bookmark.setTitle || 'Himpunan Tidak Dikenal'}</span>
-        <button onclick="toggleBookmark({ID_No_Soal: '${bookmark.id}', ID_Himpunan_Latihan: '${bookmark.setId}', Judul_Himpunan_Latihan: '${safeTitle}', Teks_Soal: '${safeText}'})" class="text-amber-500 hover:text-amber-600 transition p-1">
+        <div class="flex flex-col">
+          <span class="text-[8px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-tighter">${bookmark.category || 'Mufradat'}</span>
+          <span class="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[150px]">${bookmark.setTitle || 'Himpunan'}</span>
+        </div>
+        <button onclick="toggleBookmark({ID_No_Soal: '${bookmark.id}', ID_Himpunan_Latihan: '${bookmark.setId}', Judul_Himpunan_Latihan: '${safeTitle}', Teks_Soal: '${safeText}', Kategori: '${bookmark.category}'})" class="text-amber-500 hover:text-amber-600 transition p-1">
           <i class="fa-solid fa-bookmark"></i>
         </button>
       </div>
-      <p class="font-arabic text-lg text-right text-slate-900 dark:text-white leading-relaxed">${bookmark.questionText}</p>
+      <p class="font-arabic text-lg text-right text-slate-900 dark:text-white leading-relaxed line-clamp-2 h-[3.5rem]">${bookmark.questionText}</p>
       <a href="latihan.html?mode=bookmark_review&setId=${bookmark.setId}&questionId=${bookmark.id}" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl text-center transition">
         <i class="fa-solid fa-arrow-right mr-1"></i> Review Soal Ini
       </a>
     `;
     container.appendChild(item);
   });
+}
+
+/**
+ * Memfilter daftar soal sulit berdasarkan input pencarian
+ */
+export function searchBookmarkedQuestions() {
+  const searchInput = document.getElementById('bookmark-search');
+  if (!searchInput) return;
+  
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) {
+    renderBookmarkedQuestionsList();
+    return;
+  }
+
+  const normalizedQ = normalizeArabic(q);
+  const results = appState.bookmarkedQuestions.filter(b => {
+    const title = (b.setTitle || "").toLowerCase();
+    const textAr = b.questionText ? normalizeArabic(b.questionText).toLowerCase() : "";
+    return title.includes(q) || textAr.includes(normalizedQ);
+  });
+
+  renderBookmarkedQuestionsList(results);
+}
+
+/**
+ * Memfilter bookmark berdasarkan kategori
+ */
+export function filterBookmarkedByCategory(category) {
+  currentBookmarkCategory = category;
+  
+  // Update UI tombol
+  const buttons = document.querySelectorAll('.bookmark-filter-btn');
+  buttons.forEach(btn => {
+    if (btn.textContent.trim() === category || (category === 'semua' && btn.textContent.trim() === 'Semua')) {
+      btn.className = "bookmark-filter-btn active-filter px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all bg-brand-600 text-white whitespace-nowrap";
+    } else {
+      btn.className = "bookmark-filter-btn px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 whitespace-nowrap";
+    }
+  });
+
+  // Reset search input jika ada
+  const searchInput = document.getElementById('bookmark-search');
+  if (searchInput) searchInput.value = '';
+
+  renderBookmarkedQuestionsList();
 }
 
 /**
@@ -1068,6 +1144,28 @@ export async function toggleBookmark(questionData) {
 
   try {
     if (existingIndex > -1) {
+      // Tambahkan animasi shake pada kartu yang akan dihapus
+      const targetCard = document.querySelector(`[data-bookmark-id="${qId}"]`);
+      if (targetCard) targetCard.classList.add('animate-shake');
+
+      // Tambahkan konfirmasi sebelum menghapus
+      // Gunakan setTimeout sedikit agar class CSS shake sempat diterapkan
+      await new Promise(resolve => setTimeout(resolve, 50)); 
+      
+      const confirmDelete = confirm("Hapus soal ini dari Daftar Soal Sulit?");
+      if (!confirmDelete) {
+        if (targetCard) targetCard.classList.remove('animate-shake');
+        return;
+      }
+
+      // Jalankan animasi collapse jika kartu ditemukan di DOM
+      if (targetCard) {
+        targetCard.classList.remove('animate-shake');
+        targetCard.classList.add('animate-collapse');
+        // Tunggu hingga transisi selesai (sesuai durasi 0.5s di CSS)
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       // Remove bookmark
       await db.bookmarks.delete(qId);
       appState.bookmarkedQuestions.splice(existingIndex, 1);
@@ -1078,7 +1176,8 @@ export async function toggleBookmark(questionData) {
         id: qId,
         setId: questionData.ID_Himpunan_Latihan,
         setTitle: questionData.Judul_Himpunan_Latihan,
-        questionText: questionData.Teks_Soal
+        questionText: questionData.Teks_Soal,
+        category: questionData.Kategori || 'Mufradat'
       };
       await db.bookmarks.put(bookmarkItem);
       appState.bookmarkedQuestions.push(bookmarkItem);

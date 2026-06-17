@@ -960,8 +960,6 @@ async function saveWordToPersonalKamus() {
 
         hideDictModal(); // Sembunyikan modal setelah menyimpan
         showModal("Sinkronisasi Sukses", "Kata tersimpan ke Google Sheets & siap dipelajari.", "fa-solid fa-cloud-arrow-up text-brand-600");
-      } else {
-        showModal("Gagal Menyimpan", res.error, "fa-solid fa-circle-xmark text-red-500");
       }
     } catch (err) {
       showModal("Gagal Menghubungi Server", err.toString(), "fa-solid fa-triangle-exclamation text-amber-500");
