@@ -51,7 +51,6 @@ let appState = {
   gasEndpoint: localStorage.getItem('meb_gas_endpoint') || '',
   isMockMode: !localStorage.getItem('meb_gas_endpoint'), // Initialize based on whether an endpoint is saved
   currentUser: JSON.parse(localStorage.getItem('meb_user')) || null,
->>>>>>> indexedDB
   pustaka: [],
   petaKosakata: [],
   kataInduk: [],
