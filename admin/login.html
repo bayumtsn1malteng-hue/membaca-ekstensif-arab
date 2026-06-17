@@ -96,8 +96,50 @@
 
   </div>
 
+  <!-- Modal Pemilihan Halaman Admin -->
+  <div id="admin-selection-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm hidden">
+    <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl border border-slate-700/60 text-center space-y-6 animate-[bounce_0.3s_ease-in-out_1]">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 mb-2 ring-1 ring-emerald-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-white">Akses Diterima!</h3>
+      <p class="text-slate-400 text-sm">Pilih panel admin yang ingin Anda akses:</p>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button 
+          onclick="redirectToAdminPage('admin-index.html')" 
+          class="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition-all duration-200 active:scale-[0.98] flex items-center justify-center text-sm space-x-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Pengelola Bacaan</span>
+        </button>
+        <button 
+          onclick="redirectToAdminPage('admin-latihan.html')" 
+          class="py-3 px-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl shadow-md transition-all duration-200 active:scale-[0.98] flex items-center justify-center text-sm space-x-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+          <span>Pengelola Latihan</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
   <!-- Logika Pengendali Event UI Halaman Login -->
   <script>
+     function showAdminSelectionModal() {
+      document.getElementById('admin-selection-modal').classList.remove('hidden');
+    }
+
+    function redirectToAdminPage(page) {
+      window.location.href = page;
+    }
+
     async function submitLogin(e) {
       e.preventDefault();
       
@@ -131,10 +173,8 @@
             
             passwordField.value = "";
             
-            // Alihkan ke Dashboard utama setelah sukses animasi
-            setTimeout(() => {
-              window.location.href = "index.html";
-            }, 1200);
+            // Tampilkan modal pemilihan halaman admin
+            setTimeout(showAdminSelectionModal, 800);
           },
           // Callback jika gagal:
           (errorMessage) => {

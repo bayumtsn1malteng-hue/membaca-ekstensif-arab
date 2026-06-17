@@ -1,61 +1,113 @@
-<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="id" class="scroll-smooth h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Membaca Ekstensif Bertingkat (MEB) - User v0.5.5-alpha</title>
+  <title>Membaca Ekstensif Bertingkat (MEB) - User v0.9.1-alpha</title>
 
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14b8a6">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png">
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png"> <!-- TODO: Ganti ikon PWA -->
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <script src="https://cdn.tailwindcss.com"></script>
+  
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            arabic: ['Amiri', 'serif'],
-            arabicSans: ['Noto Sans Arabic', 'sans-serif'],
+    function loadTailwindFallback() {
+      console.warn("Aset CSS lokal (output.css) tidak ditemukan. Menggunakan CDN Tailwind sebagai cadangan...");
+      const script = document.createElement('script');
+      script.src = 'https://cdn.tailwindcss.com';
+      script.onload = () => {
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                brand: {
+                  50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a', 950: '#042f2e',
+                },
+              },
+            },
           },
-          colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
-              900: '#115e59',
-            }
-          }
-        }
-      }
+        };
+      };
+      document.head.appendChild(script);
     }
   </script>
-  
-  <link rel="stylesheet" href="css/user_style.css">
+  <!-- Local Tailwind Build with CDN Fallback -->
+  <link rel="stylesheet" href="css/output.css" id="tailwind-link" onerror="loadTailwindFallback()">
+
+  <style>
+    /* Spasi baris vertikal ekstra longgar khusus untuk harakat Arab yang sangat padat */
+    .arabic-text {
+      line-height: 2.2;
+      direction: rtl;
+    }
+
+    /* Focus Mode Enhancement */
+    .focus-active #reader-canvas, 
+    .focus-active #exercise-question-text {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 40px -15px rgba(0,0,0,0.05);
+      transition: all 0.5s ease;
+    }
+    .dark .focus-active #reader-canvas,
+    .dark .focus-active #exercise-question-text {
+      background: rgba(15, 23, 42, 0.6);
+      box-shadow: 0 10px 40px -15px rgba(0,0,0,0.3);
+    }
+
+    .word-span {
+      padding: 4px 6px;
+      margin: 2px 2px;
+      border-radius: 8px;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+    .view-transition {
+      transition: all 0.2s ease-in-out;
+    }
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col view-transition">
 
   <!-- HEADER MOBILE (Hanya muncul di layar ponsel) -->
-  <header class="md:hidden sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 h-14 flex items-center justify-between">
+  <header class="md:hidden sticky top-0 z-30 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 h-14 flex items-center justify-between transition-all duration-300 ease-in-out">
     <div class="flex items-center gap-2">
       <div class="bg-brand-600 text-white p-1.5 rounded-lg shadow-sm">
         <i class="fa-solid fa-book-open-reader text-xs"></i>
       </div>
       <div>
         <h1 class="text-xs font-bold text-slate-900 dark:text-white leading-none">MEB Arab</h1>
-        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">v0.5.5-alpha</span>
+        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">v0.9.1-alpha</span>
       </div>
     </div>
     <div class="flex items-center gap-2">
@@ -63,14 +115,23 @@
       <button onclick="toggleDarkMode()" class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition">
         <i id="theme-icon-mobile" class="fa-solid fa-moon text-xs"></i>
       </button>
-      <button onclick="handleAvatarClick()" class="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-655 dark:text-slate-300 font-bold text-[9px] hover:ring-2 hover:ring-brand-500 transition cursor-pointer border-none outline-none" id="header-avatar" title="Login / Daftar">
-        G
-      </button>
+      <div class="relative">
+        <button onclick="toggleMobileProfileMenu()" class="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-[10px] shadow-sm active:scale-95 transition" id="header-avatar">
+          G
+        </button>
+        <!-- Dropdown Mobile -->
+        <div id="mobile-profile-dropdown" class="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 hidden z-50">
+          <div class="px-4 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
+            <p class="text-[10px] font-bold text-slate-400 uppercase">Akun Saya</p>
+          </div>
+          <button onclick="logout()" class="w-full text-left px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 transition">Log Out</button>
+        </div>
+      </div>
     </div>
   </header>
 
   <!-- SIDEBAR DESKTOP (Hanya muncul di layar sedang ke atas) -->
-  <aside class="hidden md:flex flex-col fixed top-0 left-0 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 p-5 justify-between">
+  <aside class="hidden md:flex max-md:!hidden flex-col fixed top-0 left-0 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 p-5 justify-between transition-all duration-300 ease-in-out">
     <div class="space-y-6">
       <!-- Logo Brand -->
       <div class="flex items-center gap-3">
@@ -79,7 +140,7 @@
         </div>
         <div>
           <h1 class="text-sm font-bold text-slate-900 dark:text-white leading-none">MEB Arab</h1>
-          <span class="text-[9px] text-brand-600 dark:text-brand-400 font-bold tracking-wider uppercase">v0.5.5-alpha</span>
+          <span class="text-[9px] text-brand-600 dark:text-brand-400 font-bold tracking-wider uppercase">v0.9.1-alpha</span>
         </div>
       </div>
 
@@ -90,6 +151,9 @@
         </button>
         <button onclick="switchView('kamus')" id="nav-kamus-btn" class="nav-btn w-full px-4 py-3 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-left flex items-center gap-3 text-slate-600 dark:text-slate-400">
           <i class="fa-solid fa-brain text-sm"></i> Leitner Box
+        </button>
+        <button onclick="window.location.href='latihan.html'" id="nav-latihan-btn" class="nav-btn w-full px-4 py-3 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-left flex items-center gap-3 text-slate-600 dark:text-slate-400">
+          <i class="fa-solid fa-pen-to-square text-sm"></i> Latihan Soal
         </button>
         <button onclick="switchView('settings')" id="nav-settings-btn" class="nav-btn w-full px-4 py-3 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-left flex items-center gap-3 text-slate-600 dark:text-slate-400">
           <i class="fa-solid fa-circle-nodes text-sm"></i> Koneksi API
@@ -132,7 +196,7 @@
   </aside>
 
   <!-- NAVIGASI MENGAMBANG MOBILE (Floating Bottom Nav - Hanya di Layar Ponsel) -->
-  <nav class="fixed bottom-4 left-4 right-4 z-40 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-lg rounded-2xl px-2 py-1.5 flex justify-around items-center" id="mobile-nav">
+  <nav class="fixed bottom-4 left-4 right-4 z-40 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-lg rounded-2xl px-2 py-1.5 flex justify-around items-center transition-all duration-300 ease-in-out" id="mobile-nav">
     <button onclick="switchView('library')" id="mob-nav-library-btn" class="flex flex-col items-center gap-0.5 px-4 py-1.5 text-brand-600 dark:text-brand-400 transition font-bold scale-105">
       <i class="fa-solid fa-book text-base"></i>
       <span class="text-[9px] font-bold">Pustaka</span>
@@ -141,14 +205,31 @@
       <i class="fa-solid fa-brain text-base"></i>
       <span class="text-[9px] font-bold">Leitner</span>
     </button>
+    <button onclick="window.location.href='latihan.html'" id="mob-nav-latihan-btn" class="flex flex-col items-center gap-0.5 px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">
+      <i class="fa-solid fa-pen-to-square text-base"></i>
+      <span class="text-[9px] font-bold">Latihan</span>
+    </button>
     <button onclick="switchView('settings')" id="mob-nav-settings-btn" class="flex flex-col items-center gap-0.5 px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">
       <i class="fa-solid fa-circle-nodes text-base"></i>
       <span class="text-[9px] font-bold">API</span>
     </button>
   </nav>
 
+  <!-- FLOATING FOCUS CONTROLS -->
+  <div id="floating-focus-controls" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 transition-all duration-300 scale-0 opacity-0 pointer-events-none">
+    <button id="focus-prev-btn" onclick="if(window.previousQuestion) window.previousQuestion()" class="hidden p-4 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full shadow-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-90">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <button id="exit-focus-btn" onclick="switchView('library')" class="p-4 bg-brand-600 text-white rounded-full shadow-2xl hover:bg-brand-700 transition-all flex items-center justify-center active:scale-90">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+    <button id="focus-next-btn" onclick="if(window.nextQuestion) window.nextQuestion()" class="hidden p-4 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full shadow-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-90">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
+
   <!-- CONTAINER KONTEN UTAMA DENGAN ADJUSTMENT MARGIN KIRI DESKTOP & PADDING BAWAH MOBILE -->
-  <div class="flex-grow md:pl-64 flex flex-col min-h-screen">
+  <div class="flex-grow md:pl-64 flex flex-col min-h-screen transition-all duration-300 ease-in-out">
     <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6 pb-28 md:pb-8">
 
       <!-- SCREEN 1: LOGIN & REGISTRASI (UI Modern Card) -->
@@ -176,7 +257,7 @@
         </form>
 
         <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500">
-          <p id="auth-toggle-text">Belum punya akun? <a href="#" onclick="toggleAuthMode(true)" class="text-brand-600 dark:text-brand-400 font-bold hover:underline">Daftar Baru</a></p>
+          <p id="auth-toggle-text">Belum punya akun? <a href="#" onclick="window.toggleAuthMode(true)" class="text-brand-600 dark:text-brand-400 font-bold hover:underline">Daftar Baru</a></p>
           <div class="mt-4">
             <button onclick="bypassLogin()" class="text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 underline font-semibold">Bypass dengan Mode Offline (Mock Data)</button>
           </div>
@@ -223,7 +304,7 @@
               <button onclick="filterLibrary('mahir')" class="diff-btn px-4 py-2 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 transition shrink-0">Mahir</button>
             </div>
             <div class="relative w-full sm:w-auto">
-              <input type="text" id="library-search" oninput="searchLibrary()" placeholder="Cari judul naskah..." class="w-full sm:w-64 pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-2 focus:ring-brand-500 outline-none transition">
+              <input type="text" id="library-search" oninput="debouncedSearchLibrary()" placeholder="Cari judul naskah..." class="w-full sm:w-64 pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent focus:ring-2 focus:ring-brand-500 outline-none transition">
               <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-[10px]"></i>
             </div>
           </div>
@@ -238,7 +319,7 @@
       <!-- SCREEN 3: E-READER BACAAN INTERAKTIF -->
       <section id="view-reader" class="max-w-4xl mx-auto space-y-4 hidden">
         <!-- Header Reader -->
-        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        <div class="bg-white/80 backdrop-blur-md dark:bg-slate-900/80 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm flex items-center justify-between sticky top-4 z-20">
           <button onclick="switchView('library')" class="text-xs font-bold text-slate-500 hover:text-brand-600 transition flex items-center gap-1.5">
             <i class="fa-solid fa-arrow-left"></i> Kembali ke Pustaka
           </button>
@@ -261,7 +342,7 @@
         <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-150 dark:border-slate-800 shadow-sm space-y-6">
           <div class="text-center pb-5 border-b border-slate-100 dark:border-slate-800">
             <h2 class="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest" id="reader-title-id">Judul Indonesia</h2>
-            <h1 class="text-3xl font-bold font-arabic text-slate-900 dark:text-white mt-3 leading-relaxed" id="reader-title-ar" dir="rtl">العُنْوَانُ</h1>
+            <h1 class="text-3xl font-bold font-arabic text-slate-900 dark:text-white mt-3 leading-loose" id="reader-title-ar" dir="rtl">العُنْوَانُ</h1>
           </div>
 
           <!-- Arabic Canvas Area -->
@@ -269,7 +350,7 @@
             <!-- Slider Vertikal (Hanya Mobile/HP) -->
             <div class="sm:hidden flex flex-col items-center justify-center p-2 bg-slate-100/50 dark:bg-slate-800/30 rounded-full border border-slate-200/50 dark:border-slate-700/50 sticky top-20">
               <i class="fa-solid fa-arrows-up-down text-[8px] text-slate-400 mb-2"></i>
-              <input type="range" min="1" max="7" step="0.1" value="3.2" id="line-height-slider-v" oninput="adjustReaderLineHeight(this.value)" class="h-48 w-1 appearance-none bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer accent-brand-600" style="-webkit-appearance: slider-vertical;">
+              <input type="range" min="1" max="7" step="0.1" value="3.2" id="line-height-slider-v" oninput="adjustReaderLineHeight(this.value)" class="h-48 w-1 appearance-none bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer accent-brand-600" style="writing-mode: vertical-lr; direction: rtl;">
             </div>
 
             <div id="reader-canvas" class="flex-grow arabic-text text-3xl sm:text-4xl text-slate-900 dark:text-slate-100 font-arabic select-none space-y-8">
@@ -291,10 +372,10 @@
 
           <!-- Terjemahan Tersembunyi -->
           <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button onclick="toggleTranslation()" class="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-2 mb-4 hover:opacity-80 transition">
+            <button onclick="window.toggleTranslation()" class="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-2 mb-4 hover:opacity-80 transition">
               <i class="fa-regular fa-eye"></i> <span id="toggle-trans-label">Tampilkan Terjemahan Indonesia</span>
             </button>
-            <div id="reader-translation" class="hidden text-xs sm:text-sm text-slate-655 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 leading-relaxed italic">
+            <div id="reader-translation" class="hidden text-xs sm:text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 leading-relaxed italic">
               <!-- Terjemah lengkap -->
             </div>
           </div>
@@ -313,16 +394,21 @@
       </section>
 
       <!-- SCREEN 4: KAMUS PERSONAL & LEITNER FLASHCARDS -->
-      <section id="view-kamus" class="space-y-6 hidden">
+      <section id="view-kamus" class="space-y-6 hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Pengantar Leitner -->
-        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div class="space-y-1">
             <h2 class="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white"><i class="fa-solid fa-graduation-cap text-brand-600"></i> Leitner Spaced Repetition Box</h2>
             <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-xl leading-relaxed">Hafalkan kosakata secara permanen. Kata di Kotak 1 ditinjau setiap hari, naik tingkat bila Anda menjawab benar, dan didegradasi kembali ke Kotak 1 bila salah menjawab.</p>
           </div>
-          <button onclick="startLeitnerSession()" class="w-full md:w-auto px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-brand-500/20 uppercase tracking-wider flex items-center justify-center gap-2">
-            <i class="fa-solid fa-play"></i> Mulai Uji Hafalan
-          </button>
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <button onclick="document.getElementById('leitner-settings-modal').classList.remove('hidden')" class="p-3.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 transition" title="Pengaturan Filter">
+              <i class="fa-solid fa-sliders"></i>
+            </button>
+            <button onclick="startLeitnerSession()" class="flex-grow md:flex-initial px-6 py-3.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center justify-center gap-3">
+              <i class="fa-solid fa-clone"></i> MULAI REVIEW
+            </button>
+          </div>
         </div>
 
         <!-- Pemilih Kotak Box Leitner -->
@@ -339,10 +425,10 @@
           </button>
           <button onclick="filterKamusByBox(3)" class="box-btn p-4 rounded-2xl border border-yellow-200 dark:border-yellow-950 text-center bg-gradient-to-br from-yellow-50/50 to-white dark:from-slate-900/40 dark:to-slate-900 transition flex flex-col items-center hover:shadow-md hover:border-yellow-400 outline-none">
             <span class="text-[10px] font-bold text-yellow-650">Box 3</span>
-            <span class="text-2xl font-black mt-1 text-yellow-700 dark:text-yellow-400" id="count-box-3">0</span>
+            <span class="text-2xl font-black mt-1 text-yellow-600 dark:text-yellow-400" id="count-box-3">0</span>
             <span class="text-[8px] uppercase tracking-wider text-yellow-500 mt-1 font-extrabold">4 Hari Sekali</span>
           </button>
-          <button onclick="filterKamusByBox(4)" class="box-btn p-4 rounded-2xl border border-sky-200 dark:border-sky-950 text-center bg-gradient-to-br from-sky-550/50 to-white dark:from-slate-900/40 dark:to-slate-900 transition flex flex-col items-center hover:shadow-md hover:border-sky-400 outline-none">
+          <button onclick="filterKamusByBox(4)" class="box-btn p-4 rounded-2xl border border-sky-200 dark:border-sky-950 text-center bg-gradient-to-br from-sky-500/50 to-white dark:from-slate-900/40 dark:to-slate-900 transition flex flex-col items-center hover:shadow-md hover:border-sky-400 outline-none">
             <span class="text-[10px] font-bold text-sky-500">Box 4</span>
             <span class="text-2xl font-black mt-1 text-sky-700 dark:text-sky-400" id="count-box-4">0</span>
             <span class="text-[8px] uppercase tracking-wider text-sky-400 mt-1 font-extrabold">8 Hari Sekali</span>
@@ -373,7 +459,7 @@
                   <th class="px-6 py-4 text-right">Kosakata Arab</th>
                   <th class="px-6 py-4">Arti / Catatan Kustom</th>
                   <th class="px-6 py-4">Letak Box</th>
-                  <th class="px-6 py-4">Tanggal Review</th>
+                  <th class="px-6 py-4 text-center">Tanggal Review</th>
                   <th class="px-6 py-4">Streak</th>
                   <th class="px-6 py-4 text-center">Tindakan</th>
                 </tr>
@@ -408,6 +494,37 @@
             <button onclick="testApiConnection()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-circle-nodes mr-1"></i> Uji Keberhasilan Koneksi
             </button>
+            <button onclick="exportDatabaseToJson()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-file-export mr-1"></i> Ekspor Cadangan (JSON)
+            </button>
+            <button onclick="document.getElementById('import-db-input').click()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-file-import mr-1"></i> Impor Cadangan (JSON)
+            </button>
+            <input type="file" id="import-db-input" class="hidden" accept=".json" onchange="importDatabaseFromJson(event)">
+            <button onclick="uploadBackupToDrive()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Cadangkan ke Drive
+            </button>
+            <button onclick="importLatestBackupFromDrive()" class="px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Impor dari Drive
+            </button>
+            <button onclick="requestNotificationPermission()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-bell mr-1"></i> Aktifkan Notifikasi
+            </button>
+            <button onclick="clearMediaCache()" class="px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-trash-can mr-1"></i> Hapus Cache Media
+            </button>
+            <button onclick="downloadAllPustakaForOffline()" class="px-4 py-2.5 bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800 text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Download Pustaka Offline
+            </button>
+            <button onclick="triggerSWUpdate()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-arrows-rotate mr-1"></i> Periksa Pembaruan Sistem
+            </button>
+            <button onclick="clearKamusOnly()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-eraser mr-1"></i> Reset Kamus Saja
+            </button>
+            <button onclick="clearAllLocalData()" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-md">
+              <i class="fa-solid fa-trash-can mr-1"></i> Hapus Semua Data Lokal (Reset)
+            </button>
             <button onclick="loadMockData(true)" class="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-database mr-1"></i> Bersihkan & Muat Ulang Mock Data
             </button>
@@ -417,10 +534,10 @@
           <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-150 dark:border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="relative flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
               </span>
-              <span class="text-xs font-bold text-slate-750 dark:text-slate-300">Mode Kerja Sistem Saat Ini:</span>
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Mode Kerja Sistem Saat Ini:</span>
             </div>
             <span class="text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 uppercase tracking-wide" id="connection-status-tag">Mock Data (Offline Mode)</span>
           </div>
@@ -438,8 +555,47 @@
           <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-3"></i>
           <h3 class="text-base font-bold" id="modal-title">Operasi Sukses</h3>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="modal-message">Pesan notifikasi.</p>
+          <!-- UI Progress Bar di Modal -->
+          <div id="modal-progress-container" class="mt-5 hidden">
+            <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div id="modal-progress-bar" class="h-full bg-brand-600 transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
         </div>
-        <button onclick="closeModal()" class="w-full mt-5 py-3 bg-slate-900 dark:bg-slate-850 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
+        <div class="flex gap-3 mt-5">
+          <button id="modal-close-btn" onclick="closeModal()" class="w-full py-3 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
+          <button id="modal-retry-btn" class="hidden w-1/2 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition">Coba Lagi</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: LEITNER SETTINGS -->
+    <div id="leitner-settings-modal" onclick="if(event.target === this) this.classList.add('hidden')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-3">
+          <h3 class="text-sm font-bold text-slate-800 dark:text-white">Pengaturan Sesi Review</h3>
+          <button onclick="document.getElementById('leitner-settings-modal').classList.add('hidden')" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sumber Kosakata</label>
+            <select id="leitner-filter-source" onchange="handleLeitnerSourceChange()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent text-xs outline-none">
+              <option value="all">Semua Kosakata</option>
+              <option value="reading">Dari Pustaka Bacaan (TX-)</option>
+              <option value="exercise">Dari Latihan Soal (VOC-LAT-)</option>
+            </select>
+          </div>
+          
+          <div id="leitner-specific-title-group" class="hidden">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Judul Spesifik</label>
+            <select id="leitner-filter-title" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent text-xs outline-none">
+              <option value="all">Semua Judul</option>
+            </select>
+          </div>
+        </div>
+
+        <button onclick="saveLeitnerSettings()" class="w-full py-3 bg-brand-600 text-white text-xs font-bold rounded-xl shadow-md">Terapkan Pengaturan</button>
       </div>
     </div>
 
@@ -469,15 +625,15 @@
           </button>
 
           <div id="leitner-actions" class="hidden grid grid-cols-2 gap-3">
-            <button onclick="submitLeitnerResult(false)" class="py-3 bg-red-50 hover:bg-red-150/40 text-red-600 border border-red-200 text-xs font-bold rounded-xl transition">
+            <button onclick="window.submitLeitnerResult(false)" class="py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-circle-xmark mr-1.5"></i> Salah / Lupa
             </button>
-            <button onclick="submitLeitnerResult(true)" class="py-3 bg-emerald-50 hover:bg-emerald-150/40 text-emerald-600 border border-emerald-200 text-xs font-bold rounded-xl transition">
+            <button onclick="window.submitLeitnerResult(true)" class="py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 text-xs font-bold rounded-xl transition">
               <i class="fa-solid fa-circle-check mr-1.5"></i> Benar / Hafal
             </button>
           </div>
 
-          <button onclick="closeLeitnerSession()" class="w-full py-2 text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 text-xs font-bold transition">
+          <button onclick="window.closeLeitnerSession()" class="w-full py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold transition">
             Hentikan Sesi Ujian
           </button>
         </div>
@@ -485,7 +641,7 @@
     </div>
 
     <!-- MODAL: KAMUS PINTAR MEB -->
-    <div id="dict-modal" onclick="if(event.target === this) closeDictModal()" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+    <div id="dict-modal" onclick="if(event.target === this) hideDictModal()" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm hidden">
       <div class="bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-3xl max-w-2xl w-full p-6 shadow-2xl border-t sm:border border-slate-100 dark:border-slate-800 space-y-5 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out_1]">
         
         <!-- Laci Drag Indicator -->
@@ -498,7 +654,7 @@
           </h3>
           <div class="flex items-center gap-2">
             <span class="text-[9px] uppercase font-bold px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 animate-pulse" id="kamus-mode-tag">Mode Off</span>
-            <button onclick="closeDictModal()" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition p-1.5 rounded-lg hover:bg-slate-150 dark:hover:bg-slate-800">
+            <button onclick="hideDictModal()" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition p-1.5 rounded-lg hover:bg-slate-150 dark:hover:bg-slate-800">
               <i class="fa-solid fa-xmark text-sm"></i>
             </button>
           </div>
@@ -547,10 +703,10 @@
           </div>
           
           <div class="flex gap-3">
-            <button onclick="closeDictModal()" class="w-1/3 border border-slate-200 dark:border-slate-750 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold py-3 rounded-xl transition">
-              Batal
+            <button onclick="hideDictModal()" class="w-1/3 border border-slate-200 dark:border-slate-750 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold py-3 rounded-xl transition">
+              Batal <!-- Ini juga harus memanggil hideDictModal() -->
             </button>
-            <button onclick="saveWordToPersonalKamus()" id="btn-save-vocab" class="w-2/3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-850 dark:hover:bg-slate-800 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-slate-950/10">
+            <button onclick="saveWordToPersonalKamus()" id="btn-save-vocab" class="w-2/3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-slate-950/10">
               <i class="fa-solid fa-bookmark text-[10px]"></i> Masukkan ke Kamus Leitner
             </button>
           </div>
@@ -561,19 +717,190 @@
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-[11px] text-slate-500">
       <p>© 2026 Membaca Ekstensif Bertingkat (MEB). Dilisensikan untuk E-Reader Pribadi.</p>
-      <a href="https://bayumtsn1malteng-hue.github.io/membaca-ekstensif-arab/admin/login.html"><p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.5.5-alpha</p></a>
+      <a href="https://bayumtsn1malteng-hue.github.io/membaca-ekstensif-arab/admin/login.html"><p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform Pembelajaran Arab Modern - v0.9.1-alpha</p></a>
     </footer>
   </div>
 
+  <!-- Script for Mobile Profile Toggle -->
+  <script>
+    function toggleMobileProfileMenu() {
+      const dropdown = document.getElementById('mobile-profile-dropdown');
+      dropdown.classList.toggle('hidden');
+      
+      // Close if clicked outside
+      document.addEventListener('click', function closeMenu(e) {
+        if (!e.target.closest('#header-avatar') && !e.target.closest('#mobile-profile-dropdown')) {
+          dropdown.classList.add('hidden');
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }
+  </script>
   <!-- ==========================================
-       LOGIKA JAVASCRIPT (STATE, ENGINE, API)
+       LOGIKA JAVASCRIPT MODULAR
+       Urutan pemuatan penting: utils → api → ui → app
        ========================================== -->
-  <!-- JS Shared & Modular -->
-  <script src="shared/arabic_utils.js"></script>
-  <script src="shared/ui_utils.js"></script>
-  <script src="shared/api_base.js"></script>
-  <script src="js/user_app.js"></script>
-  <script src="js/user_api.js"></script>
-  <script src="js/user_ui.js"></script>
+
+  <!-- Service Worker PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => {
+            console.log('Service Worker terdaftar', reg);
+
+            // Deteksi pembaruan
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                // Jika worker baru sudah terpasang tapi masih menunggu
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Panggil showModal yang sudah diekspos oleh user_app.js ke window
+                  if (window.showModal) {
+                    window.showModal(
+                      "Pembaruan Tersedia", 
+                      "Versi terbaru aplikasi telah diunduh. Muat ulang sekarang untuk menikmati fitur terbaru?", 
+                      "fa-solid fa-cloud-arrow-down text-brand-600",
+                      () => {
+                        newWorker.postMessage('SKIP_WAITING');
+                      }
+                    );
+                  }
+                }
+              });
+            });
+          })
+          .catch(err => console.log('Pendaftaran SW gagal', err));
+      });
+
+      // Reload otomatis saat Service Worker baru mengambil alih
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+  </script>
+
+  <!-- Modul Utilitas Arab Bersama -->
+  <script src="shared/arabic_utils.js" type="module"></script>
+
+  <!-- Modul Komunikasi API User -->
+  <script src="js/user_api.js" type="module"></script>
+  
+  <!-- Modul Antarmuka & Rendering UI User -->
+  <script src="js/user_ui.js" type="module"></script>
+
+  <script type="module"> import { searchLibrary } from './js/user_ui.js'; window.debouncedSearchLibrary = searchLibrary; </script>
+
+  <!-- Modul Utama Aplikasi (State, Auth, Bisnis Logik) -->
+  <script src="js/user_app.js" type="module"></script>
+
+  <!-- Global exposure for dynamic HTML onclick handlers and cross-module access -->
+  <script type="module">
+    import { 
+      switchView, toggleAuthMode, filterLibrary, searchLibrary, toggleMinimalistMode, 
+      adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, 
+      filterKamusByBox, closeModal, closeLeitnerSession, revealLeitnerCard, 
+      showDictModal, hideDictModal, toggleBookmark, updateBookmarkUI, renderBookmarkedQuestionsList
+    } from './js/user_ui.js';
+    import { 
+      logout, handleAuthSubmit, bypassLogin, handleAvatarClick, loadMockData, 
+      handleWordClick, markReadAsFinished, saveWordToPersonalKamus, deleteKamusWord, 
+      startLeitnerSession, submitLeitnerResult, nextLeitnerCard, saveApiEndpoint, 
+      testApiConnection, uploadBackupToDrive, clearAllLocalData, clearKamusOnly, 
+      importLatestBackupFromDrive, exportDatabaseToJson, importDatabaseFromJson, 
+      requestNotificationPermission, triggerSWUpdate, downloadAllPustakaForOffline, clearMediaCache,
+      handleLeitnerSourceChange, saveLeitnerSettings, resetLeitnerSettings
+    } from './js/user_app.js';
+
+    // Expose functions from user_ui.js
+    window.switchView = switchView;
+    window.toggleAuthMode = toggleAuthMode;
+    window.filterLibrary = filterLibrary;
+    window.searchLibrary = searchLibrary; // The debounced version
+    window.toggleMinimalistMode = toggleMinimalistMode;
+    window.adjustReaderFont = adjustReaderFont;
+    window.resetReaderSettings = resetReaderSettings;
+    window.adjustReaderLineHeight = adjustReaderLineHeight;
+    window.toggleTranslation = toggleTranslation;
+    window.filterKamusByBox = filterKamusByBox;
+    window.closeModal = closeModal;
+    window.closeLeitnerSession = closeLeitnerSession;
+    window.revealLeitnerCard = revealLeitnerCard;
+    window.showDictModal = showDictModal;
+    window.hideDictModal = hideDictModal;
+    window.toggleBookmark = toggleBookmark;
+    window.updateBookmarkUI = updateBookmarkUI;
+    window.renderBookmarkedQuestionsList = renderBookmarkedQuestionsList;
+
+    // Expose functions from user_app.js
+    window.logout = logout;
+    window.handleAuthSubmit = handleAuthSubmit;
+    window.bypassLogin = bypassLogin;
+    window.handleAvatarClick = handleAvatarClick;
+    window.loadMockData = loadMockData;
+    window.handleWordClick = handleWordClick;
+    window.markReadAsFinished = markReadAsFinished;
+    window.saveWordToPersonalKamus = saveWordToPersonalKamus;
+    window.deleteKamusWord = deleteKamusWord;
+    window.startLeitnerSession = startLeitnerSession;
+    window.submitLeitnerResult = submitLeitnerResult;
+    window.nextLeitnerCard = nextLeitnerCard;
+    window.saveApiEndpoint = saveApiEndpoint;
+    window.testApiConnection = testApiConnection;
+    window.uploadBackupToDrive = uploadBackupToDrive;
+    window.clearAllLocalData = clearAllLocalData;
+    window.clearKamusOnly = clearKamusOnly;
+    window.importLatestBackupFromDrive = importLatestBackupFromDrive;
+    window.exportDatabaseToJson = exportDatabaseToJson;
+    window.importDatabaseFromJson = importDatabaseFromJson;
+    window.requestNotificationPermission = requestNotificationPermission;
+    window.triggerSWUpdate = triggerSWUpdate;
+    window.downloadAllPustakaForOffline = downloadAllPustakaForOffline;
+    window.clearMediaCache = clearMediaCache;
+    window.handleLeitnerSourceChange = handleLeitnerSourceChange;
+    window.saveLeitnerSettings = saveLeitnerSettings;
+    window.resetLeitnerSettings = resetLeitnerSettings;
+  </script>
+
+  <!-- Inisialisasi Aplikasi -->
+  <script type="module"> 
+    import { appState, loadMockData, migrateFromLocalStorage, hydrateAppStateFromDB, checkAndAutoRestore } from './js/user_app.js';
+    import { setupUserInterface, switchView } from './js/user_ui.js';
+    import { pullSystemDataFromServer, pullUserKamusFromServer } from './js/user_api.js';
+
+    window.addEventListener('load', async () => {
+      // Jalankan migrasi sekali jika ada data lama
+      await migrateFromLocalStorage();
+      // Hidrasi state dari database lokal agar aplikasi terasa instan
+      await hydrateAppStateFromDB();
+      if (window.renderBookmarkedQuestionsList) {
+        window.renderBookmarkedQuestionsList(); // Initial render of bookmarked questions
+      }
+      // Cek apakah perlu restore otomatis (IndexedDB kosong tapi login aktif)
+      await checkAndAutoRestore();
+
+      if (appState.currentUser) {
+        setupUserInterface();
+        if (appState.isMockMode) {
+          await loadMockData(false);
+        } else {
+          // Jalankan sinkronisasi di latar belakang
+          pullSystemDataFromServer();
+          pullUserKamusFromServer();
+        }
+
+        // Cek hash fragment di URL untuk menentukan view awal
+        const initialView = window.location.hash.substring(1); // Hapus '#'
+        if (initialView && ['library', 'kamus', 'reader', 'settings'].includes(initialView)) {
+          switchView(initialView);
+        } else {
+          switchView('library'); // Default view
+        }
+      } else {
+        switchView('login');
+      }
+    });
+  </script>
+
 </body>
 </html>

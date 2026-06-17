@@ -56,7 +56,7 @@ function checkAdminSession() {
     // Sesi ada, jika admin mencoba mengakses login.html, alihkan langsung ke dashboard index.html
     if (isLoginPage) {
       console.log("[Auth] Sesi aktif terdeteksi. Mengalihkan ke Dashboard...");
-      window.location.href = "index.html";
+      window.location.href = "admin-index.html";
     }
   } else {
     // Sesi tidak ada, jika mencoba mengakses halaman admin selain login.html, kunci & alihkan ke login.html

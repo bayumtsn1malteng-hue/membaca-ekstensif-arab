@@ -1,6 +1,6 @@
 /**
  * MODUL KOMUNIKASI API & SINKRONISASI
- * Versi: v0.5.0-alpha.2
+ * Versi: v0.5.1-alpha
  * ID Unik: MEB-ADMIN-API-001
  * * Modul ini menangani pengiriman data (POST) dan penarikan data (GET) 
  * ke Google Apps Script serta pengelolaan status koneksi (Local vs Live).
@@ -13,37 +13,38 @@
  * @returns {Promise<boolean>} Status keberhasilan pengiriman
  */
 async function postDataToBackend(action, payload) {
-  if (connectionMode === "local") return true;
+  if (connectionMode === "local") return { success: true };
 
   const url = document.getElementById("api-script-url").value.trim();
   if (!url) {
-    showModal("Konfigurasi Diperlukan", "Mode Live Aktif namun URL Apps Script Kosong.", "fa-solid fa-circle-info text-indigo-500");
-    return false;
+    showToast("Peringatan: Mode Live Aktif namun URL Apps Script Kosong.", "warning");
+    return { success: false, error: "URL Apps Script Kosong" };
   }
 
   const indicator = document.getElementById("sync-status-indicator");
-  indicator.classList.remove("hidden");
+  if (indicator) indicator.classList.remove("hidden");
 
   try {
     const response = await fetch(url, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
+      mode: "cors",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ action: action, data: payload })
     });
     
+    const result = await response.json();
     showToast("Mengirim pembaruan realtime ke Sheets...", "info");
-    setTimeout(() => {
-      syncDatabaseLive();
-    }, 1500);
+    
+    // Segarkan database secara sinkron agar cache langsung terupdate tanpa timeout buatan
+    await syncDatabaseLive();
 
-    return true;
+    return result;
   } catch (err) {
     console.error("[API Error]", err);
     showToast("Gagal menyimpan realtime ke Google Sheets. Disimpan lokal.", "error");
-    return false;
+    return { success: false, error: err.toString() };
   } finally {
-    indicator.classList.add("hidden");
+    if (indicator) indicator.classList.add("hidden");
   }
 }
 

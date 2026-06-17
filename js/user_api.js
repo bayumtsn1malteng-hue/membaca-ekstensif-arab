@@ -1,99 +1,50 @@
 /**
- * MODUL KOMUNIKASI API (USER)
- * Versi: v0.5.5-alpha
+ * MODUL KOMUNIKASI API USER (USER API MODULE)
+ * Versi: v0.8.8-alpha (Sync Version)
  * ID Unik: MEB-USER-API-001
- * * Modul ini bertanggung jawab untuk semua interaksi dengan Google Apps Script (GAS) backend.
+ * * Modul ini menangani pemanggilan API sinkronisasi data user dan sistem
+ * dengan Google Apps Script Web App.
  */
 
+import { appState, db } from './user_app.js';
+import { renderLibrary, updateDashboardStats, renderKamusTable, showModal } from './user_ui.js'; //
 /**
- * Menyimpan URL endpoint Google Apps Script ke localStorage.
+ * Melakukan pemanggilan POST API secara aman dengan metode CORS dan retries + exponential backoff
+ * @param {Object} payload - Objek data payload yang akan dikirim
+ * @param {number} retries - Jumlah percobaan jika terjadi kegagalan koneksi
+ * @param {number} delay - Waktu tunda awal (ms) sebelum mencoba kembali
+ * @returns {Promise<Object>} Respons JSON dari server
  */
-function saveApiEndpoint() {
-  const url = document.getElementById('api-endpoint-url').value.trim();
-  if (url === "") {
-    appState.gasEndpoint = "";
-    appState.isMockMode = true;
-    saveToLocalStorage('meb_gas_endpoint', '');
-    document.getElementById('connection-status-tag').textContent = "Mock Data (Offline Mode)";
-    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 uppercase tracking-wide";
-    document.getElementById('btn-sync-manual').classList.add('hidden');
-    showModal("Mode Offline Diaktifkan", "Endpoint kosong, sistem kembali menggunakan simulasi database browser.", "fa-solid fa-circle-info text-slate-500");
-  } else if (url.startsWith("https://script.google.com/")) {
-    appState.gasEndpoint = url;
-    appState.isMockMode = false;
-    saveToLocalStorage('meb_gas_endpoint', url);
-    document.getElementById('connection-status-tag').textContent = "Sinkron Server Aktif";
-    document.getElementById('connection-status-tag').className = "text-[10px] font-extrabold px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 uppercase tracking-wide";
-    document.getElementById('btn-sync-manual').classList.remove('hidden');
-    
-    pullSystemDataFromServer();
-    pullUserKamusFromServer();
+export async function apiCall(payload, retries = 5, delay = 1000) {
+  if (!appState.gasEndpoint) throw new Error("Endpoint API belum siap.");
 
-    showModal("Endpoint Disimpan", "Koneksi Google Apps Script berhasil ditargetkan dan sinkronisasi dimulai.", "fa-solid fa-cloud-arrow-up text-teal-600");
-  } else {
-    showModal("Format URL Salah", "Gunakan URL Web App resmi Google Apps Script.", "fa-solid fa-triangle-exclamation text-rose-500");
-  }
-}
-
-/**
- * Menguji koneksi ke Google Apps Script backend.
- */
-async function testApiConnection() {
-  if (appState.isMockMode || !appState.gasEndpoint) {
-    showModal("Koneksi Batal", "Silakan atur URL Jembatan Integrasi di atas terlebih dahulu.", "fa-solid fa-triangle-exclamation text-amber-500");
-    return;
-  }
-
-  showModal("Menguji Koneksi", "Menghubungi web app Google Sheets...", "fa-solid fa-circle-notch animate-spin text-brand-600");
-  
-  try {
-    const response = await fetch(`${appState.gasEndpoint}?action=initDatabase`);
-    const data = await response.json();
-    
-    closeModal();
-    if (data.success) {
-      showModal("Koneksi Berhasil!", "Google Apps Script backend merespons sukses.", "fa-solid fa-circle-check text-emerald-500");
-      pullSystemDataFromServer();
-    } else {
-      showModal("Koneksi Ditolak", `Pesan Error: ${data.error}`, "fa-solid fa-circle-xmark text-rose-500");
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(appState.gasEndpoint, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' }, 
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      if (attempt === retries) throw error;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2; 
     }
-  } catch (err) {
-    closeModal();
-    showModal("Gagal Menghubungi Server", `Periksa hak akses Web App. Error: ${err.toString()}`, "fa-solid fa-circle-xmark text-rose-500");
   }
 }
 
-/**
- * Melakukan sinkronisasi penuh (Data Sistem + Kamus User)
- */
-async function syncAllData() {
-  if (appState.isMockMode || !appState.gasEndpoint) {
-    showModal("Mode Offline", "Anda sedang dalam mode mock data. Sambungkan endpoint di pengaturan untuk sinkronisasi.", "fa-solid fa-circle-info text-amber-500");
-    return;
-  }
-
-  const btnId = 'btn-sync-manual';
-  const originalHtml = `<i class="fa-solid fa-arrows-rotate mr-1"></i> Sinkron`;
-  
-  showSpinnerButton(btnId, true);
-
-  try {
-    await pullSystemDataFromServer();
-    await pullUserKamusFromServer();
-    showModal("Sinkronisasi Sukses", "Pustaka dan kamus pribadi Anda telah diperbarui.", "fa-solid fa-circle-check text-emerald-500");
-  } catch (err) {
-    console.error("Sync Error:", err);
-    showModal("Gagal Sinkron", "Terjadi kendala saat menghubungi server.", "fa-solid fa-circle-xmark text-rose-500");
-  } finally {
-    showSpinnerButton(btnId, false, originalHtml);
-  }
-}
+let isSystemSyncing = false;
 
 /**
- * Menarik data sistem (pustaka, peta kosakata, kata induk, sambungan) dari server.
+ * Menarik data teks bacaan sistem terkini dari Spreadsheet Server
  */
-async function pullSystemDataFromServer() {
-  if (appState.isMockMode || !appState.gasEndpoint) return;
+export async function pullSystemDataFromServer() {
+  if (isSystemSyncing || appState.isMockMode || !appState.gasEndpoint) return;
+
+  isSystemSyncing = true;
   try {
     const btn = document.getElementById('btn-sync-manual');
     if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i>`;
@@ -105,22 +56,81 @@ async function pullSystemDataFromServer() {
       appState.petaKosakata = res.data.peta_kosakata || [];
       appState.kataInduk = res.data.kata_induk || [];
       appState.sambungan = res.data.sambungan || [];
+      appState.judulHimpunanLatihan = res.data.judul_himpunan_latihan || [];
+      
+      
+        // Cache data sistem secara massal ke IndexedDB
+      await Promise.all([
+        db.pustaka.bulkPut(appState.pustaka),
+        db.petaKosakata.bulkPut(appState.petaKosakata),
+        db.kataInduk.bulkPut(appState.kataInduk),
+        db.sambungan.bulkPut(appState.sambungan)
+      ]);
+      console.log("[DB] Data Sistem berhasil diperbarui di IndexedDB");
+
+
       renderLibrary();
       updateDashboardStats();
     }
   } catch (err) {
     console.error("Gagal menarik naskah sistem: ", err);
+    showModal("Sinkronisasi Gagal", "Gagal menarik data naskah dari server.", "fa-solid fa-triangle-exclamation text-amber-500", () => pullSystemDataFromServer());
   } finally {
+    isSystemSyncing = false;
     const btn = document.getElementById('btn-sync-manual');
     if (btn) btn.innerHTML = `<i class="fa-solid fa-arrows-rotate mr-1"></i> Sinkron`;
   }
 }
 
 /**
- * Menarik kamus personal pengguna dari server.
+ * Menarik data soal latihan tertentu dari Spreadsheet Server berdasarkan ID Himpunan
+ * @param {string} setId - ID Himpunan Latihan (ID_Himpunan_Latihan)
+ * @returns {Promise<Object>} Respons data soal dari server
  */
-async function pullUserKamusFromServer() {
-  if (appState.isMockMode || !appState.gasEndpoint || !appState.currentUser) return;
+export async function fetchExerciseData(setId) {
+  if (appState.isMockMode || !appState.gasEndpoint) return null;
+  try {
+    const res = await apiCall({
+      action: "getLatihanQuestions",
+      setId: setId
+    });
+    return res;
+  } catch (err) {
+    console.error("Gagal menarik data latihan: ", err);
+    throw err;
+  }
+}
+
+/**
+ * Menarik riwayat skor latihan user untuk himpunan tertentu dari Spreadsheet Server.
+ * @param {string} userId - ID User.
+ * @param {string} setId - ID Himpunan Latihan.
+ * @returns {Promise<Object>} Respons data riwayat skor dari server.
+ */
+export async function fetchExerciseScoreHistory(userId, setId) {
+  if (appState.isMockMode || !appState.gasEndpoint || !userId || !setId) return null;
+  try {
+    const res = await apiCall({
+      action: "getExerciseScoreHistory",
+      userId: userId,
+      setId: setId
+    });
+    return res;
+  } catch (err) {
+    console.error("Gagal menarik riwayat skor latihan: ", err);
+    throw err;
+  }
+}
+
+/**
+ * Menarik data kamus pribadi user terkini dari Spreadsheet Server
+ */
+let isUserKamusSyncing = false;
+
+export async function pullUserKamusFromServer() {
+  if (isUserKamusSyncing || appState.isMockMode || !appState.gasEndpoint || !appState.currentUser) return;
+
+  isUserKamusSyncing = true;
   try {
     const res = await apiCall({
       action: "getUserKamus",
@@ -128,13 +138,48 @@ async function pullUserKamusFromServer() {
     });
     if (res.success && res.data) {
       appState.kamusUser = res.data;
-      saveToLocalStorage('meb_local_kamus', res.data);
+      
+      // Strategi "Remote Wins": Bersihkan cache lokal sebelum menyimpan data segar dari server
+      // Ini memastikan data mock atau data user sebelumnya tidak tercampur.
+      await db.kamusUser.clear();
+      await db.kamusUser.bulkPut(res.data);
+      
+      // Re-hydrate state lokal dari database yang baru saja diperbarui
+      appState.kamusUser = await db.kamusUser.toArray();
+      
       updateDashboardStats();
       if (appState.selectedBoxFilter) {
         renderKamusTable(appState.selectedBoxFilter);
       }
+    } else {
+      console.warn("[Sync] Gagal menarik kamus pribadi:", res.error);
+      showModal("Sinkronisasi Kamus Gagal", res.error || "Server tidak memberikan data kamus.", "fa-solid fa-triangle-exclamation text-amber-500", () => pullUserKamusFromServer());
     }
   } catch (err) {
     console.error("Gagal sinkron kamus pribadi: ", err);
+    showModal("Kesalahan Jaringan", "Gagal menghubungi server untuk mengambil kamus pribadi.", "fa-solid fa-wifi text-rose-500", () => pullUserKamusFromServer());
+  } finally {
+    isUserKamusSyncing = false;
   }
+}
+
+/**
+ * Mengambil daftar judul unik dari pustaka dan himpunan latihan yang tersimpan di appState.
+ * Digunakan untuk mengisi dropdown filter pada pengaturan Leitner.
+ * @returns {Object} Objek berisi array judul pustaka dan judul latihan.
+ */
+export function getUniqueSourceTitles() {
+  // Mapping judul dari Pustaka Bacaan
+  const readingTitles = appState.pustaka.map(item => ({
+    id: item.ID_Teks,
+    title: item.Judul_Teks || item.Terjemah_Judul_Indonesia || item.Judul_Teks_Arab || "Tanpa Judul"
+  }));
+
+  // Mapping judul dari Himpunan Latihan
+  const exerciseTitles = appState.judulHimpunanLatihan.map(item => ({
+    id: item.ID_Himpunan_Latihan,
+    title: item.Judul_Himpunan_Latihan || "Latihan Tanpa Judul"
+  }));
+
+  return { readingTitles, exerciseTitles };
 }
