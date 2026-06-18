@@ -1,11 +1,12 @@
 /**
  * MODUL UI USER (USER UI MODULE)
- * Versi: v0.8.8-alpha (Fix Duplicate Export)
+ * Versi: v0.8.9-alpha (Fix Duplicate Export)
  * ID Unik: MEB-USER-UI-001
  * * Modul ini menangani seluruh rendering visual, manipulasi DOM,
  * pergantian screen (routing), pengaturan font/line-height, dan dialog modal.
  */
-import { appState, handleWordClick, db } from './user_app.js'; // Import appState and handleWordClick
+import { appState, db } from './user_state.js';
+import { handleWordClick } from './user_events.js';
 import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
 
 

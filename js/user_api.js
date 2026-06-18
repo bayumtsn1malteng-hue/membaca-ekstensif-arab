@@ -1,12 +1,12 @@
 /**
  * MODUL KOMUNIKASI API USER (USER API MODULE)
- * Versi: v0.8.8-alpha (Sync Version)
+ * Versi: v0.8.9-alpha (Sync Version)
  * ID Unik: MEB-USER-API-001
  * * Modul ini menangani pemanggilan API sinkronisasi data user dan sistem
  * dengan Google Apps Script Web App.
  */
 
-import { appState, db } from './user_app.js';
+import { appState, db } from './user_state.js';
 import { renderLibrary, updateDashboardStats, renderKamusTable, showModal } from './user_ui.js'; //
 /**
  * Melakukan pemanggilan POST API secara aman dengan metode CORS dan retries + exponential backoff
