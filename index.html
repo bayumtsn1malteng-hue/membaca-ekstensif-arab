@@ -789,78 +789,8 @@
   <!-- Modul Antarmuka & Rendering UI User -->
   <script src="js/user_ui.js" type="module"></script>
 
-  <script type="module"> import { searchLibrary } from './js/user_ui.js'; window.debouncedSearchLibrary = searchLibrary; </script>
-
   <!-- Modul Utama Aplikasi (State, Auth, Bisnis Logik) -->
   <script src="js/user_app.js" type="module"></script>
-
-  <!-- Global exposure for dynamic HTML onclick handlers and cross-module access -->
-  <script type="module">
-    import { 
-      switchView, toggleAuthMode, filterLibrary, searchLibrary, toggleMinimalistMode, 
-      adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, toggleTranslation, 
-      filterKamusByBox, closeModal, closeLeitnerSession, revealLeitnerCard, 
-      showDictModal, hideDictModal, toggleBookmark, updateBookmarkUI, renderBookmarkedQuestionsList
-    } from './js/user_ui.js';
-    import { 
-      logout, handleAuthSubmit, bypassLogin, handleAvatarClick, loadMockData, 
-      handleWordClick, markReadAsFinished, saveWordToPersonalKamus, deleteKamusWord, 
-      startLeitnerSession, submitLeitnerResult, nextLeitnerCard, saveApiEndpoint, 
-      testApiConnection, uploadBackupToDrive, clearAllLocalData, clearKamusOnly, 
-      importLatestBackupFromDrive, exportDatabaseToJson, importDatabaseFromJson, 
-      requestNotificationPermission, triggerSWUpdate, downloadAllPustakaForOffline, clearMediaCache,
-      handleLeitnerSourceChange, saveLeitnerSettings, resetLeitnerSettings
-    } from './js/user_app.js';
-
-    // Expose functions from user_ui.js
-    window.switchView = switchView;
-    window.toggleAuthMode = toggleAuthMode;
-    window.filterLibrary = filterLibrary;
-    window.searchLibrary = searchLibrary; // The debounced version
-    window.toggleMinimalistMode = toggleMinimalistMode;
-    window.adjustReaderFont = adjustReaderFont;
-    window.resetReaderSettings = resetReaderSettings;
-    window.adjustReaderLineHeight = adjustReaderLineHeight;
-    window.toggleTranslation = toggleTranslation;
-    window.filterKamusByBox = filterKamusByBox;
-    window.closeModal = closeModal;
-    window.closeLeitnerSession = closeLeitnerSession;
-    window.revealLeitnerCard = revealLeitnerCard;
-    window.showDictModal = showDictModal;
-    window.hideDictModal = hideDictModal;
-    window.toggleBookmark = toggleBookmark;
-    window.updateBookmarkUI = updateBookmarkUI;
-    window.renderBookmarkedQuestionsList = renderBookmarkedQuestionsList;
-
-    // Expose functions from user_app.js
-    window.logout = logout;
-    window.handleAuthSubmit = handleAuthSubmit;
-    window.bypassLogin = bypassLogin;
-    window.handleAvatarClick = handleAvatarClick;
-    window.loadMockData = loadMockData;
-    window.handleWordClick = handleWordClick;
-    window.markReadAsFinished = markReadAsFinished;
-    window.saveWordToPersonalKamus = saveWordToPersonalKamus;
-    window.deleteKamusWord = deleteKamusWord;
-    window.startLeitnerSession = startLeitnerSession;
-    window.submitLeitnerResult = submitLeitnerResult;
-    window.nextLeitnerCard = nextLeitnerCard;
-    window.saveApiEndpoint = saveApiEndpoint;
-    window.testApiConnection = testApiConnection;
-    window.uploadBackupToDrive = uploadBackupToDrive;
-    window.clearAllLocalData = clearAllLocalData;
-    window.clearKamusOnly = clearKamusOnly;
-    window.importLatestBackupFromDrive = importLatestBackupFromDrive;
-    window.exportDatabaseToJson = exportDatabaseToJson;
-    window.importDatabaseFromJson = importDatabaseFromJson;
-    window.requestNotificationPermission = requestNotificationPermission;
-    window.triggerSWUpdate = triggerSWUpdate;
-    window.downloadAllPustakaForOffline = downloadAllPustakaForOffline;
-    window.clearMediaCache = clearMediaCache;
-    window.handleLeitnerSourceChange = handleLeitnerSourceChange;
-    window.saveLeitnerSettings = saveLeitnerSettings;
-    window.resetLeitnerSettings = resetLeitnerSettings;
-  </script>
 
   <!-- Inisialisasi Aplikasi -->
   <script type="module"> 

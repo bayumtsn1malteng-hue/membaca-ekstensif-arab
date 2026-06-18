@@ -60,7 +60,11 @@ import {
   closeModal,
   closeLeitnerSession,
   revealLeitnerCard,
-  hideDictModal
+  showDictModal,
+  hideDictModal,
+  toggleBookmark,
+  updateBookmarkUI,
+  renderBookmarkedQuestionsList
 } from './user_ui.js';
 
 import {
@@ -114,8 +118,17 @@ window.closeLeitnerSession = closeLeitnerSession;
 window.revealLeitnerCard = revealLeitnerCard;
 window.startLeitnerSession = startLeitnerSession;
 window.submitLeitnerResult = submitLeitnerResult;
+window.nextLeitnerCard = nextLeitnerCard;
 window.pullSystemDataFromServer = pullSystemDataFromServer;
 window.pullUserKamusFromServer = pullUserKamusFromServer;
+window.triggerSWUpdate = triggerSWUpdate;
+window.downloadAllPustakaForOffline = downloadAllPustakaForOffline;
+window.clearMediaCache = clearMediaCache;
+window.debouncedSearchLibrary = searchLibrary;
+window.showDictModal = showDictModal;
+window.toggleBookmark = toggleBookmark;
+window.updateBookmarkUI = updateBookmarkUI;
+window.renderBookmarkedQuestionsList = renderBookmarkedQuestionsList;
 
 // ============================================================
 // --- RE-EXPORT UNTUK IMPOR EKSTERNAL (MODUL LAIN / SCRIPT MODUL) ---
