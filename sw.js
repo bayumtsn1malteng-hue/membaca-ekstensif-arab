@@ -1,12 +1,13 @@
 // Import Dexie using importScripts for classic Service Worker compatibility
 importScripts('./js/dexie.js'); // Assuming you save dexie.js in your js folder
 
-const SW_VERSION = 'v0.9.0';
-const CACHE_NAME = 'meb-cache-v0.9.0';
+const SW_VERSION = 'v0.9.6';
+const CACHE_NAME = 'meb-cache-v0.9.6';
 // Pastikan semua aset penting untuk offline tercantum di sini
 const urlsToCache = [
   'index.html',
   'latihan.html',
+  'admin/admin-latihan.html,
   'css/output.css', // Menggunakan output.css dari build Tailwind
 ];
 
