@@ -1,8 +1,8 @@
 // Import Dexie using importScripts for classic Service Worker compatibility
 importScripts('./js/dexie.js'); // Assuming you save dexie.js in your js folder
 
-const SW_VERSION = 'v0.9.6';
-const CACHE_NAME = 'meb-cache-v0.9.6';
+const SW_VERSION = 'v0.9.7';
+const CACHE_NAME = 'meb-cache-v0.9.7';
 // Pastikan semua aset penting untuk offline tercantum di sini
 const urlsToCache = [
   'index.html',
