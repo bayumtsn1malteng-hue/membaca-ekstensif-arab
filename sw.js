@@ -7,7 +7,7 @@ const CACHE_NAME = 'meb-cache-v0.9.7';
 const urlsToCache = [
   'index.html',
   'latihan.html',
-  'admin/admin-latihan.html,
+  'admin/admin-latihan.html',
   'css/output.css', // Menggunakan output.css dari build Tailwind
 ];
 
