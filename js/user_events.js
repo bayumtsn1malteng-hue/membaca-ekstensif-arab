@@ -247,6 +247,7 @@ export function handleWordClick(arabicWordWithHarakat) {
 
       buildDynamicModeBLayout(mapping, cleanWordWithHarakat);
       appState.activeWordSelected.idKataInduk = mapping.ID_Kata_Induk;
+      appState.activeWordSelected.idKosakata = mapping.ID_Kosakata;
 
     } else {
       document.getElementById('kamus-mode-tag').textContent = "Mode A (Murni)";
@@ -282,6 +283,21 @@ export function handleWordClick(arabicWordWithHarakat) {
     document.getElementById('dict-word-meaning-header').textContent = "Kata mandiri (belum didefinisikan)";
     appState.activeWordSelected.idKataInduk = "";
   }
+  // === KODE DEBUG UNTUK MELACAK SAAT KATA DIKLIK ===
+  console.log("=== DEBUG HANDLE WORD CLICK ===");
+  console.log("Kata yang diklik:", cleanWordWithHarakat);
+  if (mapping) {
+    console.log("Data mapping ditemukan:", mapping);
+    console.log("ID_Kosakata dari mapping:", mapping.ID_Kosakata);
+    
+    // Kita pastikan sekali lagi baris penitipan ini tereksekusi
+    appState.activeWordSelected.idKosakata = mapping.ID_Kosakata;
+    console.log("Isi appState.activeWordSelected SEKARANG:", appState.activeWordSelected);
+  } else {
+    console.warn("Peringatan: Kata tidak ditemukan di petaKosakata!");
+  }
+  console.log("===============================");
+
 
   showDictModal();
 }
@@ -323,14 +339,29 @@ export async function markReadAsFinished() {
     }
   }
 }
-
+// ============================
+// MENYIMPAN KOSAKATA TERPILIH
+// ============================
 export async function saveWordToPersonalKamus() {
   if (!appState.activeWordSelected || !appState.currentUser) return;
+
+  //DEBUG
+  console.log("=== DEBUG SAVE WORD TO KAMUS ===");
+  console.log("1. Seluruh isi activeWordSelected:", appState.activeWordSelected);
+  console.log("2. idKosakata yang dibaca:", appState.activeWordSelected.idKosakata);
+  console.log("3. Status Mock Mode saat ini (True/False):", appState.isMockMode);
+  console.log("=================================");
+  //===================
+
+
 
   const userId = appState.currentUser.userId;
   const wordPolos = appState.activeWordSelected.polos;
   const idKataInduk = appState.activeWordSelected.idKataInduk || "IND-NASKAH";
   const customMeaning = document.getElementById('dict-custom-meaning').value.trim();
+  
+  // Ambil idKosakata yang sudah kita titipkan saat kata diklik
+  const idKosakataAsal = appState.activeWordSelected.idKosakata || "";
 
   if (appState.isMockMode) {
     const exist = appState.kamusUser.some(k => k.Kata_Polos === wordPolos && k.ID_User === userId);
@@ -339,8 +370,13 @@ export async function saveWordToPersonalKamus() {
       return;
     }
 
+    // LOGIKA BARU: Tentukan awalan (prefix) berdasarkan asal idKosakata
+    const prefix = idKosakataAsal.startsWith("VOC-LAT-") ? "VOC-LAT-" : "VOC-";
+    const randomID = Math.floor(100000 + Math.random() * 900000);
+
     const newWord = {
-      ID_User_Word: "VOC-" + Math.floor(100000 + Math.random() * 900000),
+      // Sekarang ID tidak lagi di-hardcode "VOC-", melainkan dinamis
+      ID_User_Word: prefix + randomID,
       ID_User: userId,
       Kata_Polos: wordPolos,
       ID_Kata_Induk: idKataInduk,
@@ -365,16 +401,20 @@ export async function saveWordToPersonalKamus() {
   } else {
     try {
       showSpinnerButton('btn-save-vocab', true);
+      
+      // LOGIKA BARU: Ikut kirimkan 'idKosakata' ke server/API
       const res = await apiCall({
         action: "addWordToKamus",
         userId: userId,
         idKataInduk: idKataInduk,
         kataPolos: wordPolos,
-        artiKustom: customMeaning
+        artiKustom: customMeaning,
+        idKosakata: idKosakataAsal // <--- Data tambahan untuk diolah Backend
       });
+      
       if (res.success) {
         const serverWord = {
-          ID_User_Word: res.idUserWord,
+          ID_User_Word: res.idUserWord, // Backend akan mengembalikan ID dengan awalan yang benar
           ID_User: userId,
           Kata_Polos: wordPolos,
           ID_Kata_Induk: idKataInduk,
@@ -438,10 +478,29 @@ export function handleLeitnerSourceChange(isInitialLoad = false) {
     return ku.Status_Belajar !== 'Known' && reviewDate <= now;
   });
 
+  // === AWAL BLOK TOTAL SOURCE COUNT DENGAN DEBUG ===
   const totalSourceCount = dueKamusItems.filter(ku => {
+    // Pengaman jika ada data yang korup atau tidak punya ID
+    if (!ku || !ku.ID_User_Word) {
+      console.warn("[DEBUG FILTER] Menemukan data kamus yang tidak valid:", ku);
+      return false;
+    }
+    
+    // Logika pengecekan awalan ID
     const isFromExercise = ku.ID_User_Word.startsWith('VOC-LAT-');
+    
+    // Log pembantu: jika sistem menemukan kata berawalan VOC-LAT-, kita cetak ke console
+    if (isFromExercise) {
+      console.log(`[DEBUG FILTER] Menemukan kata LATIHAN! ID: ${ku.ID_User_Word}, Status Belajar: ${ku.Status_Belajar}`);
+    }
+
+    // Logika penyaringan berdasarkan menu yang sedang aktif (source)
     return (source === 'reading' && !isFromExercise) || (source === 'exercise' && isFromExercise);
   }).length;
+
+  // Log hasil akhir: Melihat berapa total kata yang berhasil lolos filter
+  console.log(`[DEBUG RESULT] Menu Aktif: '${source}'. Total kata yang lolos filter = ${totalSourceCount}`);
+  // === AKHIR BLOK TOTAL SOURCE COUNT ===
 
   selectTitle.innerHTML = `<option value="all">Semua Judul (${totalSourceCount} kata)</option>`;
 

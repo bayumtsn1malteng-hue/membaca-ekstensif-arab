@@ -8,7 +8,7 @@
 import { appState, db } from './user_state.js';
 import { handleWordClick } from './user_events.js';
 import { cleanArabicHarakat, normalizeArabic } from '../shared/arabic_utils.js';
-
+import { apiCall } from './user_api.js';
 
 // --- GRADASI WARNA ADAPTIF LEITNER BOX ---
 const LEITNER_THEME = {
