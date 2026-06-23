@@ -24,7 +24,7 @@ self.addEventListener('install', event => {
         })
       );
     })
-    .then(() => console.log(`[SW] ${SW_VERSION} installation process finished.`))
+      .then(() => console.log(`[SW] ${SW_VERSION} installation process finished.`))
   );
 });
 
@@ -52,8 +52,8 @@ self.addEventListener('activate', event => {
         })
       );
     })
-    .then(() => self.clients.claim())
-    .then(() => console.log(`[SW] ${SW_VERSION} activated.`))
+      .then(() => self.clients.claim())
+      .then(() => console.log(`[SW] ${SW_VERSION} activated.`))
   );
 });
 
