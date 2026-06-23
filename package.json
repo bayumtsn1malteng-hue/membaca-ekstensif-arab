@@ -1,6 +1,6 @@
 {
   "name": "meb-arab",
-  "version": "0.9.1",
+  "version": "0.9.14",
   "description": "Membaca Ekstensif Bertingkat (MEB) Arab",
   "scripts": {
     "sync-sw": "node bump-sw.js",
