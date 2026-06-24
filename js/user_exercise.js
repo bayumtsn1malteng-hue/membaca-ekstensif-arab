@@ -361,6 +361,10 @@ function showChallengeSetupModal(onConfirm, onCancel) {
 
 let lastDirection = 'next';
 export function setExerciseMode(mode, keepAnswer = false) {
+
+  // Menghentikan fungsi bila mode yang dipanggil sama
+  if (mode === appState.exerciseMode) return;
+
   // Simpan mode saat ini sebagai mode sebelumnya sebelum diubah
   const previousMode = appState.exerciseMode;
 
@@ -465,8 +469,6 @@ function showBookmarkChallengeConfirmModal(count, previousMode) {
   const oldModal = document.getElementById('bookmark-confirm-modal');
   if (oldModal) oldModal.remove();
 
-
-
   const modalHtml = `
     <div id="bookmark-confirm-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all scale-95 opacity-0 duration-200">
@@ -494,7 +496,17 @@ function showBookmarkChallengeConfirmModal(count, previousMode) {
     </div>
   `;
 
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  // document.body.insertAdjacentHTML('beforeend', modalHtml);
+  // 1. Ubah string HTML menjadi elemen DOM menggunakan template element
+  const template = document.createElement('template');
+  template.innerHTML = modalHtml.trim();
+  const modalElement = template.content.firstChild;
+
+  // Menjamin z-index tinggi secara inline sebelum dimasukkan ke DOM
+  modalElement.style.zIndex = "9999";
+
+  // 2. Masukkan ke body menggunakan appendChild agar bersaing adil dengan modal z-50
+  document.body.appendChild(modalElement);
 
   // Animasi masuk modal halus
   setTimeout(() => {
