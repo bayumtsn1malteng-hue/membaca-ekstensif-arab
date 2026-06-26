@@ -65,6 +65,14 @@
  </div>
 
  <div class="flex items-center space-x-3 w-full md:w-auto">
+ <div class="flex items-center gap-2">
+     <div id="status-antrean" class="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl font-bold hidden">
+         ⚠️ Ada data belum disinkron
+     </div>
+     <button id="btn-sinkron-kosakata" onclick="sinkronisasikanAntreanKosakata()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+         🔄 Sinkronisasikan Data
+     </button>
+ </div>
  <nav class="flex-1 md:flex-none flex overflow-x-auto no-scrollbar space-x-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/50">
  <button id="nav-btn-input" onclick="switchNav('input')" class="active-tap flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white text-violet-700 shadow-xs flex-shrink-0">
  <span>1. Input Soal</span>
@@ -392,6 +400,7 @@
  </div>
  <form id="form-vocab-mapper" onsubmit="handleSaveVocabMapping(event)" class="p-5 sm:p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
  <div class="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
   <!--
  <div class="flex flex-col">
  <label class="block text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Kategori Kata</label>
@@ -482,7 +491,11 @@
  </div>
 
  <!-- Scripts -->
- <script src="../shared/arabic_utils.js"></script>
+ <script type="module">
+    import { cleanArabicDiacritics, arabicLightStemmer } from '../shared/arabic_utils.js';
+    window.cleanArabicDiacritics = cleanArabicDiacritics;
+    window.arabicLightStemmer = arabicLightStemmer;
+ </script>
  <script src="js/api.js"></script>
  <script src="js/ui.js"></script>
  <script>
@@ -494,6 +507,7 @@
     let dbMasterSambungan = [];
     let stateActiveWord = {};
     let deleteTarget = { idHimpunan: null, nomorSoal: null };
+    let isSyncing = false; // Flag penanda sinkronisasi aktif agar tidak bentrok
 
     const DB_KEYS = {
         KOSAKATA: "membaca_peta_kosakata",
@@ -637,8 +651,162 @@
         renderBlock("Pilihan هـ", question.Pilihan_E);
     }
 
-    // --- LOGIKA MODAL PEMETAAN DILAYANI OLEH admin/js/ui.js SECARA MODULAR ---
+    // --- LOGIKA INDIKATOR SINKRONISASI OFFLINE-TO-ONLINE ---
 
+    /**
+     * Memperbarui visibilitas tombol & info sinkronisasi berdasarkan jumlah antrean di LocalStorage
+     */
+    function perbaruiIndikatorAntrean() {
+        try {
+            const antrean = JSON.parse(localStorage.getItem("antrean_peta_kosakata")) || [];
+            const tombolSinkron = document.getElementById("btn-sinkron-kosakata");
+            const statusAntrean = document.getElementById("status-antrean");
+            
+            if (antrean.length > 0) {
+                if (tombolSinkron) {
+                    if (isSyncing) {
+                        tombolSinkron.innerHTML = `⏳ Menyinkronkan... (${antrean.length})`;
+                        tombolSinkron.disabled = true;
+                    } else {
+                        tombolSinkron.innerHTML = `🔄 Sinkronisasikan Data (${antrean.length})`;
+                        tombolSinkron.disabled = false;
+                    }
+                    tombolSinkron.classList.remove("hidden");
+                }
+                if (statusAntrean) {
+                    if (isSyncing) {
+                        statusAntrean.innerHTML = `<span class="inline-block animate-pulse">⏳ Menyinkronkan... (${antrean.length})</span>`;
+                    } else {
+                        statusAntrean.innerText = `⚠️ ${antrean.length} data pemetaan belum disinkron`;
+                    }
+                    statusAntrean.classList.remove("hidden");
+                }
+            } else {
+                if (tombolSinkron) tombolSinkron.classList.add("hidden");
+                if (statusAntrean) statusAntrean.classList.add("hidden");
+            }
+        } catch (e) {
+            console.error("Gagal memperbarui indikator antrean:", e);
+        }
+    }
+
+    /**
+     * Mengirimkan seluruh antrean kosakata lokal ke database cloud spreadsheet (Mendukung Real-Time Count Down)
+     */
+    async function sinkronisasikanAntreanKosakata(isBackground = false) {
+        if (isSyncing) return;
+
+        const antrean = JSON.parse(localStorage.getItem("antrean_peta_kosakata")) || [];
+        
+        if (antrean.length === 0) {
+            if (!isBackground) showToast("Tidak ada data pemetaan di antrean lokal.", "info");
+            return;
+        }
+
+        if (!isBackground) {
+            const konfirmasi = confirm(`Apakah Anda yakin ingin menyinkronkan ${antrean.length} data ke server?`);
+            if (!konfirmasi) return;
+        }
+
+        isSyncing = true;
+        const tombolSinkron = document.getElementById("btn-sinkron-kosakata");
+        const statusAntrean = document.getElementById("status-antrean");
+
+        if (tombolSinkron) {
+            tombolSinkron.disabled = true;
+            tombolSinkron.innerHTML = `⏳ Menyinkronkan... (${antrean.length})`;
+        }
+
+        if (!isBackground) {
+            showToast(`Memulai sinkronisasi ${antrean.length} pemetaan...`, "info");
+        } else {
+            console.log(`[Auto-Sync] Menjalankan sinkronisasi background untuk ${antrean.length} item...`);
+        }
+        
+        let suksesCount = 0;
+        let gagalAntrean = [];
+        const tempIdMap = {}; // Petakan ID Sementara ke ID asli hasil response server
+
+        // Iterasi item satu demi satu untuk update hitungan mundur indikator visual secara real-time
+        for (let i = 0; i < antrean.length; i++) {
+            const item = antrean[i];
+            try {
+                // Resolusi relasi: Jika gabungan menggunakan ID_Kata_Induk sementara (TEMP-IND-*)
+                if (item.data.jenis_kata === "Gabungan" && item.data.ID_Kata_Induk && item.data.ID_Kata_Induk.startsWith("TEMP-IND-")) {
+                    const realId = tempIdMap[item.data.ID_Kata_Induk];
+                    if (realId) {
+                        item.data.ID_Kata_Induk = realId;
+                    }
+                }
+
+                // Kirim payload ke Google Apps Script (GAS)
+                const response = await apiCall(item);
+                
+                if (response && response.status === "success") {
+                    suksesCount++;
+                    // Jika itu kata induk baru, simpan real ID hasil response server
+                    if (item.data.jenis_kata === "Induk" && item.tempId && response.result && response.result.id_induk) {
+                        tempIdMap[item.tempId] = response.result.id_induk;
+                    }
+
+                    // HAPUS item yang sukses dari antrean lokal secara langsung agar indikator langsung berkurang!
+                    // Sisa antrean adalah gabungan dari sisa list saat ini plus list item yang sebelumnya gagal
+                    const sisaAntrean = antrean.slice(i + 1).concat(gagalAntrean);
+                    localStorage.setItem("antrean_peta_kosakata", JSON.stringify(sisaAntrean));
+
+                    // Perbarui visual real-time hitungan mundur
+                    perbaruiIndikatorAntrean();
+                } else {
+                    gagalAntrean.push(item);
+                }
+            } catch (error) {
+                console.error("Gagal mengirim payload:", item, error);
+                gagalAntrean.push(item);
+                
+                // Masukkan ke gagal antrean agar disimpan kembali di local
+                const sisaAntrean = antrean.slice(i + 1).concat(gagalAntrean);
+                localStorage.setItem("antrean_peta_kosakata", JSON.stringify(sisaAntrean));
+                perbaruiIndikatorAntrean();
+            }
+        }
+
+        // Tulis akhir ke localStorage (sisa gagal yang tidak terkirim)
+        localStorage.setItem("antrean_peta_kosakata", JSON.stringify(gagalAntrean));
+        
+        isSyncing = false;
+        
+        // Tarik data bersih terbaru dari cloud database untuk menyegarkan memori state
+        await refreshLatihanMetadata();
+        perbaruiIndikatorAntrean();
+        renderQuestionVocabFeedback();
+
+        if (tombolSinkron) tombolSinkron.disabled = false;
+
+        if (gagalAntrean.length === 0) {
+            showToast(`🎉 Seluruh data (${suksesCount} pemetaan) berhasil disinkronkan ke server!`, "success");
+        } else {
+            showToast(`⚠️ Sinkronisasi selesai sebagian. Sukses: ${suksesCount}, Gagal: ${gagalAntrean.length}`, "warning");
+        }
+    }
+
+    /**
+     * Menginisialisasi sinkronisasi latar belakang otomatis (Auto Background Sync)
+     */
+    function inisialisasiAutoSync() {
+        setInterval(async () => {
+            // Jalankan hanya jika browser sedang online, tidak sedang sinkronisasi aktif, dan ada data di antrean
+            if (navigator.onLine && !isSyncing) {
+                const antrean = JSON.parse(localStorage.getItem("antrean_peta_kosakata")) || [];
+                if (antrean.length > 0) {
+                    await sinkronisasikanAntreanKosakata(true);
+                }
+            }
+        }, 20000); // Mengecek antrean setiap 20 detik secara berkala
+    }
+
+    /**
+     * Menyimpan pemetaan secara lokal (Antrean Local Storage)
+     */
     async function handleSaveVocabMapping(event) {
         event.preventDefault();
         
@@ -648,33 +816,86 @@
         const cleanWord = cleanArabicDiacritics(rawWord);
         const artiTeks = document.getElementById("mapper-arti-teks").value.trim();
         const idHimpunan = document.getElementById('ID_Himpunan_Latihan_Hidden').value;
-        const kategoriInduk = document.getElementById('mapper-kategori-induk').value;
+        // const kategoriInduk = document.getElementById('mapper-kategori-induk').value;
 
+        // Ambil antrean lama dari LocalStorage
+        const antreanLokal = JSON.parse(localStorage.getItem("antrean_peta_kosakata")) || [];
         let id_kata_induk = "";
 
-        // 2. SINKRONISASI KATA INDUK (Resolusi ID dari Spreadsheet)
-        // Identifikasi target kata induk berdasarkan mode (Induk atau Gabungan)
-        const kataIndukTarget = (jenisVal === "Induk") ? cleanWord : document.getElementById("gabungan-kata-induk").value.trim();
-        const artiIndukTarget = (jenisVal === "Induk") ? artiTeks : document.getElementById("gabungan-arti-induk").value.trim();
+        // 2. LOGIKA PROSES OFFLINE KATA INDUK
+        if (jenisVal === "Induk") {
+            const tempId = `TEMP-IND-${Date.now()}`;
+            id_kata_induk = tempId;
 
-        if (kataIndukTarget && artiIndukTarget) {
-            // Selalu panggil backend saveVocab (Induk) untuk 'Find or Create' ID_Kata_Induk
-            const responseInduk = await apiCall({ 
-                action: "saveVocab", 
-                data: { 
-                    jenis_kata: "Induk", 
-                    Kata_Induk: kataIndukTarget, 
-                    Kata_Induk_Polos: cleanArabicDiacritics(kataIndukTarget), 
-                    Arti_Kata_Induk: artiIndukTarget, 
-                    Kategori: kategoriInduk 
-                } 
-            });
-            
-            if (responseInduk.status === "success" && responseInduk.result.id_induk) {
-                id_kata_induk = responseInduk.result.id_induk;
-            } else {
-                showToast("Gagal mendapatkan relasi Kata Induk dari server.", "error");
-                return;
+            const payloadInduk = {
+                action: "saveVocab",
+                tempId: tempId, // Penanda pencocokan lokal saat sinkronisasi
+                data: {
+                    jenis_kata: "Induk",
+                    // Kata_Induk: rawWord,
+                    Kata_Induk_Polos: cleanWord,
+                    Arti_Kata_Induk: artiTeks,
+                    // Kategori: kategoriInduk
+                }
+            };
+            antreanLokal.push(payloadInduk);
+
+            // Perbarui state memori lokal agar UI langsung berubah warna di tab kosakata
+            const localIndukRecord = {
+                ID_Kata_Induk: tempId,
+                // Kata_Induk: rawWord,
+                Kata_Induk_Polos: cleanWord,
+                Arti_Kata_Induk: artiTeks,
+                // Kategori: kategoriInduk
+            };
+            dbKataInduk.push(localIndukRecord);
+            localStorage.setItem(DB_KEYS.KATA_INDUK, JSON.stringify(dbKataInduk));
+
+        } else {
+            // Jika jenis_kata === "Gabungan"
+            let inputIdInduk = document.getElementById("gabungan-id-induk").value.trim();
+            const kataIndukTarget = document.getElementById("gabungan-kata-induk").value.trim();
+            const artiIndukTarget = document.getElementById("gabungan-arti-induk").value.trim();
+
+            if (kataIndukTarget && artiIndukTarget) {
+                if (!inputIdInduk) {
+                    // Cari terlebih dahulu di dbKataInduk lokal apakah root kata induk ini sudah ada
+                    const cleanIndukTarget = cleanArabicDiacritics(kataIndukTarget);
+                    const match = dbKataInduk.find(i => i.Kata_Induk_Polos === cleanIndukTarget);
+                    
+                    if (match) {
+                        inputIdInduk = match.ID_Kata_Induk;
+                    } else {
+                        // Kata induk belum ada. Buat baru & masukkan ke antrean lokal sebelum gabungan diproses
+                        const tempId = `TEMP-IND-${Date.now()}`;
+                        inputIdInduk = tempId;
+
+                        const payloadInduk = {
+                            action: "saveVocab",
+                            tempId: tempId,
+                            data: {
+                                jenis_kata: "Induk",
+                                // Kata_Induk: kataIndukTarget,
+                                Kata_Induk_Polos: cleanIndukTarget,
+                                Arti_Kata_Induk: artiIndukTarget,
+                                // Kategori: kategoriInduk
+                            }
+                        };
+                        antreanLokal.push(payloadInduk);
+
+                        // Simpan sementara di memori browser
+                        const localIndukRecord = {
+                            ID_Kata_Induk: tempId,
+                            // Kata_Induk: kataIndukTarget,
+                            Kata_Induk_Polos: cleanIndukTarget,
+                            Arti_Kata_Induk: artiIndukTarget,
+                            // Kategori: kategoriInduk
+                        };
+                        dbKataInduk.push(localIndukRecord);
+                        localStorage.setItem(DB_KEYS.KATA_INDUK, JSON.stringify(dbKataInduk));
+                    }
+                }
+                id_kata_induk = inputIdInduk;
             }
         }
 
@@ -696,7 +917,7 @@
             }
         });
 
-        // 4. SIMPAN PEMETAAN KE PETA_KOSAKATA
+        // 4. SIMPAN PEMETAAN GABUNGAN KE ANTREAN LOKAL
         const targetRecord = {
             ID_Kosakata: `VOC-LAT-${Date.now()}`,
             ID_Teks: idHimpunan || "", // Menggunakan ID_Himpunan_Latihan sebagai referensi sumber
@@ -707,17 +928,34 @@
             ...sambunganData
         };
 
-        const responsePeta = await apiCall({ action: "saveVocab", data: { jenis_kata: "Gabungan", ...targetRecord } });
+        const payloadPeta = {
+            action: "saveVocab",
+            data: { jenis_kata: "Gabungan", ...targetRecord }
+        };
+        antreanLokal.push(payloadPeta);
+
+        // Update database kosakata di memori browser agar visual warna langsung berubah seketika
+        const localPetaRecord = {
+            ID_Kosakata: targetRecord.ID_Kosakata,
+            ID_Teks: targetRecord.ID_Teks,
+            Kata_Teks: targetRecord.Kata_Teks,
+            Kata_Teks_Polos: targetRecord.Kata_Teks_Polos,
+            Arti_Kata_Teks: targetRecord.Arti_Kata_Teks,
+            ID_Kata_Induk: targetRecord.ID_Kata_Induk,
+            ...sambunganData
+        };
+        dbPetaKosakata.push(localPetaRecord);
+        localStorage.setItem(DB_KEYS.KOSAKATA, JSON.stringify(dbPetaKosakata));
+
+        // 5. PENULISAN AKHIR KE LOCALSTORAGE
+        localStorage.setItem("antrean_peta_kosakata", JSON.stringify(antreanLokal));
+
+        // Segarkan UI modal & tabel visual tanpa hit server
+        closeVocabModal();
+        renderQuestionVocabFeedback();
+        perbaruiIndikatorAntrean();
         
-        if (responsePeta.status === "success") {
-            // Segarkan metadata untuk memperbarui cache lokal Kata_Induk dan Peta_Kosakata
-            await refreshLatihanMetadata();
-            closeVocabModal();
-            renderQuestionVocabFeedback();
-            showToast("Pemetaan kosakata berhasil disimpan secara realtime!", "success");
-        } else {
-            showToast("Gagal menyimpan pemetaan ke server.", "error");
-        }
+        showToast(`Disimpan ke antrean lokal browser! (${antreanLokal.length} item siap disinkron)`, "success");
     }
 
     function showToast(message, type = "success") {
@@ -1235,7 +1473,11 @@
     }
 
     // Jalankan sinkronisasi saat halaman dimuat
-    window.addEventListener('DOMContentLoaded', refreshLatihanMetadata);
+    window.addEventListener('DOMContentLoaded', async () => {
+        await refreshLatihanMetadata();
+        perbaruiIndikatorAntrean();
+        inisialisasiAutoSync(); // Aktifkan Background Auto-Sync otomatis
+    });
 
     function switchNav(target) {
         const sections = ['input', 'vocab', 'preview', 'history'];

@@ -120,19 +120,6 @@ window.onload = function() {
   showToast("Aplikasi Admin berhasil diinisialisasi secara modular!", "info");
 };
 
-function getFromLocalStorage(key, defaultValue) {
-  const data = localStorage.getItem(key);
-  if (!data) {
-    localStorage.setItem(key, JSON.stringify(defaultValue));
-    return defaultValue;
-  }
-  return JSON.parse(data);
-}
-
-function saveToLocalStorage(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
 function loadSelectedTextIntoState(textObj) {
   stateActiveText = textObj;
   renderLiveArabicFeedback();
@@ -168,30 +155,6 @@ function generateMetadata() {
   const tanggal_rilis = `${YYYY}-${MM}-${DD} ${HH}:${Min}:${Sec} WIT`;
 
   return { id_teks, tanggal_rilis };
-}
-
-/**
- * Menyaring teks paragraf menjadi array kata-kata unik bahasa Arab
- */
-function parseArabicText(rawText) {
-  const cleanParagraph = rawText.trim().replace(/\s+/g, ' ');
-  const rawWords = cleanParagraph.split(' ');
-  
-  const seen = new Set();
-  const uniqueQueue = [];
-
-  rawWords.forEach(word => {
-    const cleaned = cleanArabicDiacritics(word);
-    if (cleaned && !seen.has(cleaned)) {
-      seen.add(cleaned);
-      uniqueQueue.push({
-        raw: word,
-        clean: cleaned
-      });
-    }
-  });
-
-  return uniqueQueue;
 }
 
 /**

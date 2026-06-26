@@ -7,37 +7,6 @@
  */
 
 /**
- * Memunculkan pesan melayang (Toast Notification) di layar
- */
-function showToast(message, type = "success") {
-  const container = document.getElementById("toast-container");
-  if (!container) return;
-  const toast = document.createElement("div");
-  toast.className = `flex items-center space-x-2.5 px-4 py-3 rounded-xl border shadow-lg text-xs font-semibold bg-white transition duration-300 transform translate-x-20 opacity-0 pointer-events-auto`;
-  
-  let colorClass = "text-emerald-700 border-emerald-100 bg-emerald-50";
-  if (type === "warning") colorClass = "text-amber-700 border-amber-100 bg-amber-50";
-  if (type === "error") colorClass = "text-rose-700 border-rose-100 bg-rose-50";
-  if (type === "info") colorClass = "text-indigo-700 border-indigo-100 bg-indigo-50";
-
-  toast.className += ` ${colorClass}`;
-  toast.innerHTML = `<span>${message}</span>`;
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.classList.remove("translate-x-20", "opacity-0");
-  }, 10);
-
-  setTimeout(() => {
-    toast.classList.add("translate-x-20", "opacity-0");
-    setTimeout(() => {
-      toast.remove();
-    }, 300);
-  }, 3000);
-}
-
-/**
  * Me-render visualisasi warna status kata Arab berdasarkan data pemetaan
  */
 function renderLiveArabicFeedback() {
@@ -57,10 +26,7 @@ function renderLiveArabicFeedback() {
     const cleaned = cleanArabicDiacritics(word);
     const vocabMatch = dbPetaKosakata.find(v => cleanArabicDiacritics(v.Kata_Teks_Polos) === cleaned);
     const directIndukMatch = dbKataInduk.find(i => cleanArabicDiacritics(i.Kata_Induk_Polos) === cleaned);
-    // Menggunakan normalizeArabic sesuai saran laporan evaluasi untuk konsistensi relasi data
-    const cleaned = normalizeArabic(word);
-    const vocabMatch = dbPetaKosakata.find(v => normalizeArabic(v.Kata_Teks_Polos) === cleaned);
-    const directIndukMatch = dbKataInduk.find(i => normalizeArabic(i.Kata_Induk_Polos) === cleaned);
+
     
     let textColorClass = "text-slate-900 bg-white border border-slate-200 hover:bg-slate-100"; 
     let titleTooltip = "Belum terpetakan (Kosakata Baru)";

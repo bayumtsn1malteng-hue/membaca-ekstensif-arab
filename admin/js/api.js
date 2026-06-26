@@ -83,15 +83,14 @@ function toggleConnectionMode(mode, showNotification = true) {
 async function syncDatabaseLive() {
   const url = document.getElementById("api-script-url").value.trim();
   if (!url) {
-    showToast("Masukkan URL Google Apps Script terlebih dahulu!", "error");
+    showModal("Konfigurasi Diperlukan", "Masukkan URL Google Apps Script terlebih dahulu!", "fa-solid fa-triangle-exclamation text-amber-500");
     return;
   }
   
   localStorage.setItem(DB_KEYS.API_URL, url);
   const btn = document.getElementById("btn-sync-live");
   const originalHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-indigo-700 border-t-transparent rounded-full mr-1.5"></span><span>Memuat...</span>`;
+  showSpinnerButton("btn-sync-live", true);
 
   try {
     const response = await fetch(url);
@@ -101,14 +100,13 @@ async function syncDatabaseLive() {
       updateLocalCacheFromBackend(result.data);
       showToast("Database berhasil disinkronkan dari Google Sheets!", "success");
     } else {
-      showToast("Gagal menarik data: " + result.message, "error");
+      showModal("Gagal Menarik Data", result.message, "fa-solid fa-circle-xmark text-rose-500");
     }
   } catch (err) {
     console.error("[Sync Error]", err);
-    showToast("Koneksi gagal! Periksa URL Apps Script & Otorisasi akses.", "error");
+    showModal("Kesalahan Koneksi", "Gagal menghubungi Apps Script. Periksa URL & Otorisasi akses.", "fa-solid fa-triangle-exclamation text-amber-500");
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
+    showSpinnerButton("btn-sync-live", false, originalHtml);
   }
 }
 

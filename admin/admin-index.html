@@ -14,6 +14,7 @@
  <script src="https://cdn.tailwindcss.com"></script>
  <script>
  tailwind.config = {
+ darkMode: 'class',
  theme: {
  extend: {
  fontFamily: {
@@ -79,6 +80,10 @@
  <p class="text-[10px] sm:text-xs text-indigo-600 font-bold tracking-wider uppercase">Panel Pengelola Bacaan v0.5.6-alpha</p>
  </div>
  </div>
+ <!-- Theme Toggle Mobile -->
+ <button onclick="toggleDarkMode()" class="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition mr-1">
+   <i id="theme-icon-mobile" class="fa-solid fa-moon text-xs"></i>
+ </button>
  <button onclick="handleAdminLogout()" class="md:hidden active-tap px-3 py-1.5 rounded-lg border border-rose-200 text-[10px] font-bold text-rose-600 hover:bg-rose-50 flex items-center space-x-1">
    <span>Logout</span>
  </button>
@@ -107,6 +112,10 @@
  <span>3. Pratinjau User</span>
  </button>
  </nav>
+ <!-- Theme Toggle Desktop -->
+ <button onclick="toggleDarkMode()" class="hidden md:flex p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition">
+   <i id="theme-icon-sidebar" class="fa-solid fa-moon text-sm"></i>
+ </button>
  <button onclick="handleAdminLogout()" class="hidden md:flex active-tap px-4 py-2 rounded-xl bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-700 text-xs font-bold items-center space-x-1.5 transition">
    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -617,6 +626,20 @@
  </div>
  </div>
 
+ <!-- ==========================================
+      MODAL DIALOG UMUM (SHARED UI)
+      ========================================== -->
+ <div id="custom-modal" onclick="if(event.target === this) this.classList.add('hidden')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden">
+   <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
+     <div class="text-center" id="modal-body">
+       <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-3"></i>
+       <h3 class="text-base font-bold" id="modal-title">Operasi Sukses</h3>
+       <p class="text-xs text-slate-500 mt-1" id="modal-message">Pesan notifikasi.</p>
+     </div>
+     <button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="w-full mt-5 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition">Tutup Dialog</button>
+   </div>
+ </div>
+
  <div id="modal-delete-confirm" class="fixed inset-0 z-50 overflow-y-auto hidden">
   <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeDeleteConfirmModal()"></div>
   <div class="flex min-h-full items-center justify-center p-4 text-center">
@@ -644,6 +667,8 @@
 
  <!-- MEMUAT SELURUH MODUL SECARA BERURUTAN (SEPARATION OF CONCERNS) -->
  <script src="../shared/arabic_utils.js"></script>
+ <script src="../shared/ui_utils.js"></script>
+ <script src="../shared/api_base.js"></script>
  <script src="js/api.js"></script>
  <script src="js/ui.js"></script>
  <script src="js/app.js"></script>

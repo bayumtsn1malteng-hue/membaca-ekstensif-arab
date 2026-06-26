@@ -18,9 +18,7 @@ export function cleanArabicDiacritics(word) {
 }
 
 /**
- * Analisis morfologi ringan (stemmer) untuk mendeteksi afiksasi awal/akhir
- * @param {string} word - Kata Arab bersih (tanpa harakat)
- * @returns {Object} Hasil ekstraksi prefiks, kata dasar, dan sufiks
+ * Menyaring teks paragraf menjadi array kata-kata unik bahasa Arab.
  */
 export function arabicLightStemmer(word) {
   const prefixes = ["ال", "لل", "بال", "كال", "فال", "وال", "ب", "ل", "ف", "و", "س"];
