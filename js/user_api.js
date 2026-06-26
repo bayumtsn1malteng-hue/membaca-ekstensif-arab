@@ -15,6 +15,51 @@ import { renderLibrary, updateDashboardStats, renderKamusTable, showModal } from
  * @param {number} delay - Waktu tunda awal (ms) sebelum mencoba kembali
  * @returns {Promise<Object>} Respons JSON dari server
  */
+
+// Utilitas pembantu untuk delay (bisa dipindahkan ke dalam file lain)
+/**
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+export async function apiCall(payload, endpoint = appState.gasEndpoint, retries = 5, delay = 1000) {
+
+  // validasi endpoint 
+  if (!endpoint) {
+    throw new  Error("Endpoint API belum siap.");
+  }
+
+  let currentDelay = delay;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify(payload)
+      });
+
+      // Antisipasi bila HTTP status code bukan 2xx (400,500, dll)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json;
+    } catch (error) {
+      // 3. Jika sudah mencapai batas retry, langsung lempar error
+      if (attempt = retries){
+        throw error;
+      }
+
+      // 4. Jeda exponential Backoff yang lebih bersih dibaca
+      await wait(currentDelay);
+      currentDelay *=2;
+    }
+    
+  }  
+  
+}
+*/
+
 export async function apiCall(payload, retries = 5, delay = 1000) {
   if (!appState.gasEndpoint) throw new Error("Endpoint API belum siap.");
 
@@ -183,3 +228,5 @@ export function getUniqueSourceTitles() {
 
   return { readingTitles, exerciseTitles };
 }
+
+

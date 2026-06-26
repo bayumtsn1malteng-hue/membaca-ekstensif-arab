@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MEB Arab - Sesi Latihan v0.9.1-hotfix</title>
+  <title>MEB Arab - Sesi Latihan v0.9.16-alpha</title>
 
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="manifest.json">
@@ -313,8 +313,8 @@
         <i class="fa-solid fa-book-open-reader text-xs"></i>
       </div>
       <div>
-        <h1 class="text-xs font-bold text-slate-900 dark:text-white leading-none">MEB Admin</h1>
-        <span class="text-[8px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">Latihan
+
+        <span class="text-[20px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">Latihan
           Soal</span>
       </div>
     </div>
@@ -352,7 +352,7 @@
       </button>
       <a href="index.html"
         class="px-3 py-2 bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 text-[10px] font-extrabold uppercase tracking-tight rounded-xl transition hover:bg-brand-100">
-        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Dashboard
+        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke menu utama
       </a>
     </div>
   </header>
@@ -377,10 +377,14 @@
   <!-- MAIN CONTENT -->
   <div class="flex-grow flex flex-col min-h-screen">
     <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6 pb-28 md:pb-8">
-
+      <!-- MUNGKIN TIDAK AKAN DIBUTUHKAN -->
+      <!-- 
       <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Manajemen Latihan Soal</h1>
+      -->
 
       <!-- Area Pemilihan Jenis Latihan (Placeholder) -->
+      <!-- BELUM DIBUTUHKAN, SIMPAN DULU-->
+      <!-- 
       <div
         class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-150 dark:border-slate-800 shadow-sm mb-4">
         <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Pilih Jenis Latihan</h2>
@@ -398,6 +402,30 @@
             (Segera Hadir)</button>
         </div>
       </div>
+      -->
+
+    
+      <!-- Riwayat Skor Latihan // SIMPAN DULU
+
+      <div id="score-history-section"
+        class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm mt-6 hidden">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Riwayat Skor Latihan</h3>
+        <div id="score-history-list" class="space-y-3">
+
+        -->
+
+          <!-- Score history items will be rendered here // SIMPAN DULU
+          <p class="text-sm text-slate-500 dark:text-slate-400">Belum ada riwayat skor untuk himpunan ini.</p>
+        </div>
+
+        <button id="btn-clear-local-scores" onclick="clearLocalScores()"
+          class="mt-4 w-full px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl transition hover:bg-rose-100 dark:hover:bg-rose-900/30">
+          <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Riwayat Lokal
+        </button>
+      </div>
+    -->
+      
+    
 
       <!-- Area Pemilihan Himpunan Latihan -->
       <!-- Pilih Himpunan Latihan -->
@@ -576,20 +604,6 @@
             <span id="progress-text" class="text-xs font-bold text-slate-700 dark:text-slate-300">0/0 Dijawab</span>
           </div>
 
-          <!-- Riwayat Skor Latihan -->
-          <div id="score-history-section"
-            class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm mt-6 hidden">
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Riwayat Skor Latihan</h3>
-            <div id="score-history-list" class="space-y-3">
-              <!-- Score history items will be rendered here -->
-              <p class="text-sm text-slate-500 dark:text-slate-400">Belum ada riwayat skor untuk himpunan ini.</p>
-            </div>
-            <button id="btn-clear-local-scores" onclick="clearLocalScores()"
-              class="mt-4 w-full px-4 py-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl transition hover:bg-rose-100 dark:hover:bg-rose-900/30">
-              <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Riwayat Lokal
-            </button>
-          </div>
-
 
           <!-- Question Card -->
           <div id="question-card"
@@ -602,12 +616,12 @@
 
             <!-- Teks Soal (Arabic) -->
             <div id="exercise-question-text"
-              class="arabic-text text-3xl sm:text-4xl text-right leading-loose min-h-[100px] pt-4">
+              class="arabic-text text-2xl sm:text-3xl text-right leading-none -m-3 min-h-[100px] pt-4">
               <!-- Rendered question text here -->
             </div>
 
             <!-- Pilihan Jawaban -->
-            <div id="exercise-options" class="grid gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+            <div id="exercise-options" class="grid gap-3 pt-2 ">
               <!-- Rendered options here -->
             </div>
 
@@ -827,7 +841,7 @@
       class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6 mt-12 text-center text-[11px] text-slate-50">
       <p>© 2026 Membaca Ekstensif Bertingkat (MEB). Admin Panel.</p>
       <p class="mt-1 text-[9px] text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider">Platform
-        Pembelajaran Arab Modern - v0.9.1-alpha</p>
+        Pembelajaran Arab Modern - v0.9.16-alpha</p>
     </footer>
   </div>
 
@@ -952,6 +966,8 @@
       const questionIdParam = urlParams.get('questionId');
       if (modeParam === 'bookmark_review') {
         appState.exerciseMode = 'bookmark_review';
+      } else if (!isResuming) {
+        appState.exerciseMode = 'read';
       }
 
       window.toggleMinimalistMode(true); // Masuk ke mode fokus

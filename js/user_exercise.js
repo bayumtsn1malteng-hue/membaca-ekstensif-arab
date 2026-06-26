@@ -634,7 +634,7 @@ export function renderQuestion() {
   if (appState.exerciseMode === 'read') {
     renderInteractiveArabicText(data.Teks_Soal, 'exercise-question-text');
   } else {
-    questionContainer.innerHTML = `<div class="sentence-block pr-4 border-r-4 border-brand-500/10 text-right font-arabic" dir="rtl">${data.Teks_Soal}</div>`;
+    questionContainer.innerHTML = `<div class="sentence-block text-right font-arabic" dir="rtl">${data.Teks_Soal}</div>`;
     questionContainer.style.fontSize = `${appState.readerFontSize}px`;
   }
 
@@ -675,7 +675,7 @@ export function renderQuestion() {
     if (!optionText) return;
 
     const btn = document.createElement('div');
-    let btnClasses = "flex items-center gap-4 p-4 rounded-2xl border transition-all group ";
+    let btnClasses = "flex items-center gap-4 transition-all group ";
 
     const label = document.createElement('span');
     let labelClasses = "w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition shrink-0 ";
