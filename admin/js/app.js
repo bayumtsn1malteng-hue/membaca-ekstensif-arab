@@ -5,9 +5,12 @@
  * * Pengatur aliran siklus hidup aplikasi Admin, deklarasi state global, 
  * inisialisasi awal program (`window.onload`), dan penanganan form submit.
  */
+import { cleanArabicDiacritics } from "/shared/arabic_utils.js";
+import { toggleConnectionMode } from "./api.js";
+import {renderLiveArabicFeedback, renderPustakaTable, renderQueueTable} from "./ui.js";
 
 // Deklarasi State Utama Aplikasi (Global Scope)
-let stateActiveText = {
+export let stateActiveText = {
   id_teks: "",
   seri: "",
   judul: "",
@@ -19,14 +22,14 @@ let stateActiveText = {
   tanggal_rilis: ""
 };
 
-let stateWordQueue = []; 
-let stateActiveWord = {}; 
-let idTeksToDelete = ""; 
+export  let stateWordQueue = []; 
+export let stateActiveWord = {}; 
+export let idTeksToDelete = ""; 
 
 let connectionMode = "local"; 
 const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbztUEY5nMEEq8qakQcaow-F_CQJ6-6PHbTdv4YZ82g6L5PyA4oOVhg-ux1g9bVZ_FSD/exec";
 
-const DB_KEYS = {
+export const DB_KEYS = {
   CONNECTION_MODE: "membaca_connection_mode",
   API_URL: "membaca_api_url",
   PUSTAKA: "membaca_pustaka_bacaan",
@@ -35,10 +38,10 @@ const DB_KEYS = {
   SAMBUNGAN: "membaca_master_sambungan"
 };
 
-let dbPustaka = [];
-let dbPetaKosakata = [];
-let dbKataInduk = [];
-let dbMasterSambungan = [];
+export let dbPustaka = [];
+export let dbPetaKosakata = [];
+export let dbKataInduk = [];
+export let dbMasterSambungan = [];
 
 // Data Dummy Bawaan jika penyimpanan kosong
 const MASTER_SAMBUNGAN_DEFAULT = [
@@ -89,7 +92,7 @@ const PETA_KOSAKATA_DEFAULT = [
 
 // INTI SIKLUS HIDUP APLIKASI
 window.onload = function() {
-  connectionMode = localStorage.getItem(DB_KEYS.CONNECTION_MODE) || "local";
+  const connectionMode = localStorage.getItem(DB_KEYS.CONNECTION_MODE) || "local";
   const apiInput = document.getElementById("api-script-url");
   if (apiInput) {
     apiInput.value = localStorage.getItem(DB_KEYS.API_URL) || DEFAULT_API_URL;

@@ -6,6 +6,7 @@
  * ke Google Apps Script serta pengelolaan status koneksi (Local vs Live).
  */
 
+import {DB_KEYS} from "./app.js";
 /**
  * Mengirim data pembaruan ke Google Apps Script secara real-time
  * @param {string} action - Nama aksi (misal: 'saveText', 'saveVocab', dll)
@@ -53,8 +54,8 @@ async function postDataToBackend(action, payload) {
  * @param {string} mode - 'local' atau 'live'
  * @param {boolean} showNotification - Apakah menampilkan notifikasi toast
  */
-function toggleConnectionMode(mode, showNotification = true) {
-  connectionMode = mode;
+export function toggleConnectionMode(mode, showNotification = true) {
+  const connectionMode = mode;
   localStorage.setItem(DB_KEYS.CONNECTION_MODE, mode);
 
   const btnLocal = document.getElementById("btn-mode-local");
@@ -80,7 +81,7 @@ function toggleConnectionMode(mode, showNotification = true) {
 /**
  * Menarik data terbaru dari Spreadsheet (Database Live) ke Penyimpanan Lokal
  */
-async function syncDatabaseLive() {
+export async function syncDatabaseLive() {
   const url = document.getElementById("api-script-url").value.trim();
   if (!url) {
     showModal("Konfigurasi Diperlukan", "Masukkan URL Google Apps Script terlebih dahulu!", "fa-solid fa-triangle-exclamation text-amber-500");
@@ -114,7 +115,7 @@ async function syncDatabaseLive() {
  * Memperbarui cache LocalStorage berdasarkan data live yang ditarik dari Apps Script
  * @param {Object} payload - Objek berisi array data pustaka, kosakata, dll
  */
-function updateLocalCacheFromBackend(payload) {
+export function updateLocalCacheFromBackend(payload) {
   dbPustaka = payload.pustaka || [];
   dbPetaKosakata = payload.peta_kosakata || [];
   dbKataInduk = payload.kata_induk || [];

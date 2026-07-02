@@ -709,7 +709,7 @@ export function renderQuestion() {
     btn.appendChild(content);
     optionsContainer.appendChild(btn);
 
-    if (appState.exerciseMode === 'read' || ((appState.exerciseMode === 'practice' || appState.exerciseMode === 'bookmark_review') && !userAnswer)) {
+    if (appState.exerciseMode === 'read') {
       renderInteractiveArabicText(optionText, content.id);
     } else {
       content.textContent = optionText;

@@ -6,10 +6,13 @@
  * render tabel, animasi toast, modal dialog, dan saran otomatis (autocomplete).
  */
 
+// IMPORT
+import { cleanArabicDiacritics } from "/shared/arabic_utils.js";
+import {stateActiveText, dbPetaKosakata, dbKataInduk, dbMasterSambungan, dbPustaka, stateWordQueue} from "./app.js";
 /**
  * Me-render visualisasi warna status kata Arab berdasarkan data pemetaan
  */
-function renderLiveArabicFeedback() {
+export function renderLiveArabicFeedback() {
   const container = document.getElementById("live-arabic-container");
   if (!stateActiveText.Konten_Arab) {
     container.innerHTML = `<span class="text-slate-400 text-sm font-sans">Belum ada bacaan aktif yang diinput.</span>`;
@@ -61,7 +64,7 @@ function renderLiveArabicFeedback() {
 /**
  * Me-render daftar pustaka bacaan pada tabel riwayat
  */
-function renderPustakaTable() {
+export function renderPustakaTable() {
   const tbody = document.getElementById("table-pustaka-body");
   tbody.innerHTML = "";
 
@@ -110,7 +113,7 @@ function renderPustakaTable() {
 /**
  * Me-render antrean kata baru dan kosakata terdaftar pada tab detail kosakata
  */
-function renderQueueTable() {
+export function renderQueueTable() {
   const tbody = document.getElementById("table-queue-body");
   if (!tbody) return;
   tbody.innerHTML = "";

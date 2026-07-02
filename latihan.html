@@ -404,17 +404,13 @@
       </div>
       -->
 
-    
-      <!-- Riwayat Skor Latihan // SIMPAN DULU
+   
 
       <div id="score-history-section"
-        class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm mt-6 hidden">
+        class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-sm mt-6">
         <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Riwayat Skor Latihan</h3>
         <div id="score-history-list" class="space-y-3">
 
-        -->
-
-          <!-- Score history items will be rendered here // SIMPAN DULU
           <p class="text-sm text-slate-500 dark:text-slate-400">Belum ada riwayat skor untuk himpunan ini.</p>
         </div>
 
@@ -423,7 +419,7 @@
           <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Riwayat Lokal
         </button>
       </div>
-    -->
+    
       
     
 
@@ -876,8 +872,9 @@
   <!-- Main Application Logic -->
   <script type="module">
     import { appState, loadMockData } from './js/user_app.js';
+    import { db } from './js/user_state.js';
     import { switchView, showModal, closeModal, showSpinnerButton, toggleDarkMode, adjustReaderFont, resetReaderSettings, adjustReaderLineHeight, renderInteractiveArabicText, hideDictModal, toggleBookmark as toggleBookmarkUI, updateBookmarkUI, renderBookmarkedQuestionsList, searchBookmarkedQuestions, filterBookmarkedByCategory } from './js/user_ui.js';
-    import { apiCall, fetchExerciseData, fetchExerciseScoreHistory, pullSystemDataFromServer } from './js/user_api.js';
+    import { apiCall, fetchExerciseData, fetchExerciseScoreHistory, pullSystemDataFromServer, pullUserKamusFromServer } from './js/user_api.js';
 
     // Impor fungsi-fungsi yang dibutuhkan dari file tantangan_timer.js
     import {
@@ -940,6 +937,12 @@
     async function startExercise(setId) {
       if (!setId) return;
 
+      const setSelectionSection = document.getElementById('set-selection-section');
+      const bookmarkSelectionSlide = document.getElementById('bookmark-selection-slide');
+      const scoreHistorySection = document.getElementById('score-history-section');
+      const exerciseSection = document.getElementById('multiple-choice-exercise-section');
+      let targetExerciseMode = 'read';
+
       let isResuming = false;
       // Cek Resume Data
       const saved = localStorage.getItem('meb_exercise_resume');
@@ -952,7 +955,7 @@
           if (confirm("Ditemukan kemajuan latihan sebelumnya. Lanjutkan dari soal terakhir?")) {
             appState.currentQuestionIndex = resumeData.index;
             appState.userAnswers = resumeData.answers;
-            appState.exerciseMode = resumeData.mode;
+            targetExerciseMode = resumeData.mode || 'read';
             isResuming = true;
           } else {
             clearExerciseProgress();
@@ -965,19 +968,17 @@
       const modeParam = urlParams.get('mode');
       const questionIdParam = urlParams.get('questionId');
       if (modeParam === 'bookmark_review') {
-        appState.exerciseMode = 'bookmark_review';
-      } else if (!isResuming) {
-        appState.exerciseMode = 'read';
+        targetExerciseMode = 'bookmark_review';
       }
 
       window.toggleMinimalistMode(true); // Masuk ke mode fokus
       appState.currentExerciseSetId = setId;
 
       // Sembunyikan pemilihan set dan daftar soal sulit, tampilkan area latihan
-      document.getElementById('set-selection-section').classList.add('hidden');
-      document.getElementById('bookmark-selection-slide').classList.add('hidden');
-      document.getElementById('score-history-section').classList.add('hidden'); // Sembunyikan riwayat saat memuat
-      document.getElementById('multiple-choice-exercise-section').classList.remove('hidden'); //
+      if (setSelectionSection) setSelectionSection.classList.add('hidden');
+      if (bookmarkSelectionSlide) bookmarkSelectionSlide.classList.add('hidden');
+      if (scoreHistorySection) scoreHistorySection.classList.add('hidden');
+      if (exerciseSection) exerciseSection.classList.remove('hidden'); //
 
 
       try { //
@@ -1009,7 +1010,8 @@
           if (!isResuming) {
             appState.userAnswers = new Array(appState.exerciseQuestions.length).fill(null);
           }
-          setExerciseMode(appState.exerciseMode || 'read', isResuming);
+          appState.exerciseMode = null;
+          setExerciseMode(targetExerciseMode, isResuming);
 
           // Ambil riwayat skor setelah soal dimuat
           if (appState.currentUser && !appState.isMockMode) { //
@@ -1028,7 +1030,6 @@
           } else {
             renderScoreHistory([]); // Render empty history for no user
           }
-          document.getElementById('score-history-section').classList.remove('hidden'); // Tampilkan bagian riwayat //
         } else {
           showModal("Gagal Memuat", res ? res.error : "Himpunan latihan tidak ditemukan.", "fa-solid fa-circle-xmark text-rose-500");
           initMockExercise();
@@ -1038,7 +1039,6 @@
         showModal("Masalah Koneksi", "Gagal menghubungi server. Menggunakan data simulasi.", "fa-solid fa-wifi text-amber-500");
         initMockExercise();
         renderScoreHistory([]); // Render empty history on error
-        document.getElementById('score-history-section').classList.remove('hidden'); // Tampilkan bagian riwayat bahkan saat error
       }
     }
 
@@ -1046,14 +1046,18 @@
      * Kembali ke menu pemilihan himpunan latihan tanpa refresh halaman
      */
     function backToSetSelection() {
+      const setSelectionSection = document.getElementById('set-selection-section');
+      const bookmarkSelectionSlide = document.getElementById('bookmark-selection-slide');
+      const scoreHistorySection = document.getElementById('score-history-section');
+      const exerciseSection = document.getElementById('multiple-choice-exercise-section');
+
       // Sembunyikan area latihan, tampilkan pemilihan set
       window.toggleMinimalistMode(false); // Keluar dari mode fokus
       clearExerciseProgress();
       stopChallengeTimer();
-      document.getElementById('multiple-choice-exercise-section').classList.add('hidden'); // Sembunyikan area latihan
-      document.getElementById('set-selection-section').classList.remove('hidden'); // Tampilkan pemilihan set
-      document.getElementById('bookmark-selection-slide').classList.remove('hidden'); // Tampilkan daftar soal sulit
-      document.getElementById('score-history-section').classList.add('hidden'); // Sembunyikan riwayat saat kembali
+      if (exerciseSection) exerciseSection.classList.add('hidden'); // Sembunyikan area latihan
+      if (setSelectionSection) setSelectionSection.classList.remove('hidden'); // Tampilkan pemilihan set
+      if (bookmarkSelectionSlide) bookmarkSelectionSlide.classList.remove('hidden'); // Tampilkan daftar soal sulit
 
       // Reset state untuk mencegah memory leak
       appState.currentExerciseSetId = null;
@@ -1343,16 +1347,31 @@
       if (appState.isMockMode) {
         // Sediakan set latihan dummy jika offline agar UI tidak kosong
         await loadMockData(false); // Memuat semua data mock, termasuk petaKosakata dan kataInduk
+        appState.kamusUser = await db.kamusUser.toArray();
         appState.judulHimpunanLatihan = [
           { ID_Himpunan_Latihan: 'MOCK-SET-001', Judul_Himpunan_Latihan: 'Latihan Contoh (Offline Mode)', Jumlah_Soal_Terdaftar: 2 }
         ];
       } else {
         await pullSystemDataFromServer();
+        await pullUserKamusFromServer();
       }
 
       // 3. Load saved card theme
       const savedTheme = localStorage.getItem('meb_card_theme') || 'default';
       setCardTheme(savedTheme);
+
+      const resumePayload = localStorage.getItem('meb_exercise_resume');
+      if (resumePayload) {
+        try {
+          const resumeData = JSON.parse(resumePayload);
+          if (resumeData && resumeData.setId) {
+            await startExercise(resumeData.setId);
+            return;
+          }
+        } catch (error) {
+          console.warn('Gagal memulihkan sesi latihan tersimpan', error);
+        }
+      }
 
       renderExerciseSets();
       renderBookmarkedQuestionsList();
