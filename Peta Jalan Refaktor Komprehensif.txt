@@ -1,0 +1,120 @@
+Peta Jalan Refaktor Komprehensif: MEB Arab SPA (v1.0.0)
+
+Dokumen ini mendefinisikan seluruh rangkaian tugas iteratif untuk merombak aplikasi MEB Arab dari arsitektur dua halaman berbasis Tailwind CSS menjadi aplikasi satu halaman murni (True Single-Page Application) berbasis ES6 Modules dan Vanilla CSS Modern.
+
+Peta Struktur Folder Target
+
+meb-arab-spa/
+├── index.html                  # Satu-satunya berkas HTML (Entry Point)
+├── sw.js                       # Service Worker PWA
+├── manifest.json               # Manifest PWA
+├── css/
+│   └── app.css                 # Vanilla CSS (Layout dasar, variabel tema, & transisi)
+└── js/
+    ├── app.js                  # Orchestrator / Main entry point (ES6 Module)
+    ├── core/
+    │   ├── state.js            # Global state manager (Reactive Proxy)
+    │   └── router.js           # View switcher (Sederhana, berbasis hash/kontainer)
+    ├── services/
+    │   ├── db.js               # Inisialisasi & operasi IndexedDB (Dexie)
+    │   └── api.js              # Panggilan HTTP ke server GAS (Exponential backoff)
+    ├── utils/
+    │   ├── arabic.js           # Pure functions linguistik Arab (Harakat, stemmer)
+    │   └── helper.js           # Utilitas umum (Debounce, delay, format tanggal)
+    ├── components/
+    │   ├── modal-alert.js      # Modul UI dialog kustom (Alert)
+    │   ├── modal-dict.js       # Modul UI kamus pintar (Mode A & Mode B)
+    │   └── flashcard.js        # Modul flashcard Leitner
+    └── views/
+        ├── library.js          # Rendering UI Perpustakaan
+        ├── reader.js           # Rendering UI E-Reader & Text Canvas
+        ├── kamus.js            # Rendering UI Kamus Personal & Daftar Bookmark
+        ├── exercise.js         # Rendering UI Sesi Latihan & Timer Tantangan
+        └── settings.js         # Rendering UI Pengaturan & Koneksi API
+
+
+Rangkaian Batch Iterasi (Peta Jalan Lengkap)
+
+Setiap subtugas di bawah ini wajib dikerjakan satu per satu. Jangan melompati tugas sebelum subtugas aktif dinyatakan lulus uji fungsionalitas dan berhasil di-commit ke Git.
+
+BATCH 1: Pondasi Struktur & Shell Tunggal (Entry Point)
+
+Fokus: Membangun pondasi dasar aplikasi tanpa merusak fungsionalitas utama.
+
+Subtugas 1.1: Pembuatan berkas index.html baru yang bersih (hanya berisi kontainer kosong untuk penempatan view dinamis) serta inisialisasi dasar CSS Variables pada css/app.css.
+
+Subtugas 1.2: Implementasi State Manager reaktif di js/core/state.js menggunakan ES6 Proxy (pemisahan bersih dari user_state.js).
+
+Subtugas 1.3: Implementasi Router modular berbasis hash di js/core/router.js untuk mendeteksi perubahan alamat halaman (misal: #library, #reader, #kamus, #exercise, #settings) dan memicu penggantian kontainer aktif di index.html.
+
+BATCH 2: Dekopling Modul Utilitas & Layanan (Services & Utils)
+
+Fokus: Mengisolasi logika bisnis murni ke dalam modul fungsional tanpa efek samping (side-effects).
+
+Subtugas 2.1: Migrasi fungsi-fungsi linguistik Arab (Harakat, normalisasi Alif, light stemmer) ke js/utils/arabic.js sebagai pure functions.
+
+Subtugas 2.2: Inisialisasi IndexedDB menggunakan Dexie di js/services/db.js (memisahkan instansiasi database dari berkas state utama).
+
+Subtugas 2.3: Pembuatan modul API terpusat di js/services/api.js (mengemas fetch, strategi retry otomatis, exponential backoff, dan panggilan Google Apps Script secara terisolasi).
+
+Subtugas 2.4: Pembuatan fungsi utilitas umum di js/utils/helper.js (fungsi debounce, delay, format tanggal, dan manajemen cookie/session ringan).
+
+BATCH 3: Komponen UI Mandiri (Reusable Modules)
+
+Fokus: Mengubah dialog-dialog modal global yang berhamburan menjadi komponen dinamis.
+
+Subtugas 3.1: Implementasi modul dialog alert kustom (js/components/modal-alert.js) yang dapat dipanggil secara programatik dari mana saja dengan parameter judul, pesan, ikon, dan callback aksi.
+
+Subtugas 3.2: Implementasi modul Kamus Pintar MEB (js/components/modal-dict.js) yang menangani dekonstruksi morfologi Arab visual (Mode A & Mode B) secara modular.
+
+Subtugas 3.3: Implementasi modul kartu flashcard Leitner (js/components/flashcard.js) untuk menampilkan pertanyaan, menyembunyikan jawaban, dan menangani kontrol gesture geser (swipe).
+
+BATCH 4: Migrasi Tampilan Inti (Views - Bagian 1)
+
+Fokus: Memisahkan bagian rendering HTML dinamis untuk fungsionalitas non-kuis.
+
+Subtugas 4.1: Implementasi View Perpustakaan (js/views/library.js) yang menangani rendering buku, penghitungan statistik tingkat keterbacaan, pencarian ter-debounce, dan seleksi filter kesulitan.
+
+Subtugas 4.2: Implementasi View Kamus Personal & Kotak Leitner (js/views/kamus.js) yang menangani rendering tabel kosakata, sistem penyaringan berbasis Kotak 1 s.d Kotak 5, serta visualisasi progres hafalan.
+
+Subtugas 4.3: Implementasi View Pengaturan Jaringan (js/views/settings.js) yang menangani manajemen endpoint integrasi API, pengujian koneksi server, ekspor-impor data JSON, serta upload backup Drive.
+
+BATCH 5: Migrasi Reader & Latihan (Views - Bagian 2)
+
+Fokus: Menyatukan e-reader dan sesi latihan dinamis ke dalam SPA.
+
+Subtugas 5.1: Implementasi View E-Reader (js/views/reader.js) yang menangani canvas teks Arab interaktif (klik kata), kontrol spasi baris adaptif vertikal, zoom ukuran font, dan penayangan terjemahan opsional.
+
+Subtugas 5.2: Implementasi View Latihan Kuis Pilihan Ganda (js/views/exercise.js) yang memuat data soal dinamis dari service API, melacak jawaban pengguna, menampilkan progress bar kuis, serta menyajikan diagram visual hasil akhir kuis (Chart.js integration).
+
+Subtugas 5.3: Pembuatan Modul Pengendali Waktu Tantangan (js/views/challenge-timer.js) untuk mengatur Challenge Timer (mode total vs mode per-soal) secara mulus di dalam view latihan.
+
+Subtugas 5.4: Implementasi Sesi Review Soal Sulit (Bookmark) yang dinamis pada halaman latihan berbasis filter kategori (Nahwu, Sharaf, Mufradat).
+
+BATCH 6: Konversi Total CSS & Tema Visual (Tailwind -> Vanilla CSS)
+
+Fokus: Membuang Tailwind CDN, menghemat beban loading, dan beralih ke Native CSS Variables.
+
+Subtugas 6.1: Desain sistem layout tata letak (Responsive Grid, Sidebar Flexbox, dan Footer) murni menggunakan vanilla CSS di css/app.css.
+
+Subtugas 6.2: Penerapan variabel tema global untuk mengontrol skema warna bacaan (Terang, Sepia, Retro, Gelap) secara tersentral pada :root dan elemen-elemen UI.
+
+Subtugas 6.3: Pembuatan animasi transisi halaman (slide in, fade, collapse, shake) menggunakan Native CSS @keyframes untuk menggantikan utilitas animasi Tailwind.
+
+BATCH 7: Pengujian, PWA & Finalisasi
+
+Fokus: Pengujian performa, penanganan luring (offline), dan deployment.
+
+Subtugas 7.1: Pengujian fungsionalitas siklus hidup aplikasi secara menyeluruh (sinkronisasi data hibrida IndexedDB vs Google GAS, fungsionalitas backup otomatis saat login).
+
+Subtugas 7.2: Sinkronisasi Service Worker (sw.js) dan Manifest PWA agar seluruh modul ES6 dan aset static CSS/Fonts dapat tersimpan sempurna di cache browser untuk akses luring murni.
+
+Subtugas 7.3: Audit error di konsol browser ($F12$), pembersihan log-log debug internal, dan komit versi stabil v1.0.0-SPA ke repositori.
+
+Kriteria Selesai Global (Definition of Done)
+
+Aplikasi berjalan murni pada satu pintu masuk index.html tanpa ada reload halaman fisik saat berpindah fitur.
+
+Tidak ada pustaka CSS pihak ketiga (Tailwind CDN dilepas sepenuhnya).
+
+Konsol browser ($F12$) bersih dari pesan galat (error) di setiap transisi halaman.
