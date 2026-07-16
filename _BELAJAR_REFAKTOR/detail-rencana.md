@@ -1,10 +1,12 @@
-Rencana Refaktor Mikro-Iteratif: Batch 1 (Pondasi Shell & State Reaktif)
+# MIKRO REFAKTOR
+
+## Rencana Refaktor Mikro-Iteratif: Batch 1 (Pondasi Shell & State Reaktif)
 
 Dokumen ini memecah Batch 1 menjadi langkah-langkah sangat kecil. Setiap subtugas dirancang agar dapat diselesaikan dalam waktu kurang dari 10 menit untuk memudahkan pengujian mandiri (self-testing) sebelum melakukan komit Git.
 
-SUBTUGAS 1.1: Pembuatan Entry Point Tunggal & Struktur Kerangka Dasar
+### SUBTUGAS 1.1: Pembuatan Entry Point Tunggal & Struktur Kerangka Dasar
 
-1.1.1: Pembuatan Berkas HTML Shell Bersih (index.html)
+### 1.1.1: Pembuatan Berkas HTML Shell Bersih (index.html)
 
 Tujuan: Membuat kerangka HTML5 dasar yang murni tanpa library styling luar (Tailwind).
 
@@ -619,4 +621,184 @@ Ekspor fungsi kontrol timer tersebut dan impor ke dalam modul view latihan js/vi
 Kriteria Selesai (DoD): Memilih "Mode Tantangan" memicu kemunculan modal kustom opsi durasi waktu, dan timer hitung mundur berjalan mulus di layar kuis secara programatik.
 
 ---
+Rencana Refaktor Mikro-Iteratif: Batch 6 (Finalisasi CSS & Standardisasi Tema)
 
+Fokus utama Batch 6 adalah melakukan pembersihan total (desinfeksi) sisa-sisa utility classes Tailwind CSS yang masih mengotori struktur HTML. Kita akan menggantinya secara bertahap menggunakan Vanilla CSS kelas khusus (custom classes) yang terpusat, mengoptimalkan rendering font Arab bertingkat, serta memastikan responsivitas layout 100% menggunakan media query CSS lokal murni.
+
+SUBTUGAS 6.1: Dekopling Utilitas Tailwind & Transisi ke Vanilla CSS Kelas Khusus
+
+6.1.1: Pemetaan & Reduksi Kelas Utility pada Header & Sidebar
+
+Tujuan: Mengidentifikasi kelas-kelas Tailwind yang bertumpuk pada komponen navigasi atas (Header) dan navigasi samping (Sidebar) untuk digantikan dengan selector kelas vanilla tunggal yang bersih.
+
+Detail Pekerjaan:
+
+Cari elemen <aside id="main-sidebar"> dan <header class="app-header"> di dalam index.html.
+
+Catat utility class Tailwind yang digunakan (misal: flex items-center justify-between border-b px-4 h-14).
+
+Buat kelas baru di CSS: .sidebar-container dan .header-container untuk membungkus seluruh properti flexbox, border, padding, dan height tersebut.
+
+Kriteria Selesai (DoD): Kode markup Header dan Sidebar bersih dari puluhan baris utility class Tailwind, digantikan oleh kelas CSS fungsional terpusat.
+
+6.1.2: Pembuatan Sistem Grid Grid-Card Pustaka & Leitner Box Murni
+
+Tujuan: Membangun layout grid responsif untuk kartu-kartu buku perpustakaan dan kotak Leitner murni menggunakan Vanilla CSS Grid.
+
+Detail Pekerjaan:
+
+Buat selector kelas .library-grid di CSS menggunakan display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;.
+
+Buat selector kelas .leitner-box-grid menggunakan display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;.
+
+Hapus seluruh kelas Tailwind grid, grid-cols-1, sm:grid-cols-2, gap-5 pada penampung kartu di HTML Anda.
+
+Kriteria Selesai (DoD): Grid perpustakaan dan Leitner box di layar desktop maupun mobile sejajar dengan presisi menggunakan Vanilla CSS Grid.
+
+6.1.3: Pembersihan Utilitas Warna, Shadow, dan Border-Radius
+
+Tujuan: Menyatukan gaya visual shadow (bayangan) dan kelengkungan sudut (border-radius) ke dalam design tokens CSS Variables agar seragam di seluruh aplikasi.
+
+Detail Pekerjaan:
+
+Ganti seluruh kelas Tailwind seperti rounded-2xl, rounded-3xl, shadow-sm, shadow-md, border-slate-150 pada kartu soal dan modal dengan properti variabel CSS --radius-md, --radius-lg, --shadow-md, dan --border-color.
+
+Pastikan transisi warna saat hover menggunakan properti transition: var(--transition-smooth);.
+
+Kriteria Selesai (DoD): Seluruh elemen kartu kuis, menu, dan modal memiliki lengkungan sudut dan bayangan yang konsisten tanpa bantuan framework CSS eksternal.
+
+SUBTUGAS 6.2: Standardisasi Tipografi Kustom & Variabel Responsif
+
+6.2.1: Deklarasi Font Stack Lokal & Penanganan Harakat Bentrok
+
+Tujuan: Menstandarisasi font stack untuk teks Arab menggunakan 'Noto Sans Arabic' dengan penyesuaian line-height dinamis agar tanda harakat atas dan bawah tidak saling memotong/bertabrakan di layar ponsel.
+
+Detail Pekerjaan:
+
+Di dalam :root CSS, pastikan variabel --font-arabic menargetkan 'Noto Sans Arabic', 'Courier New', serif sebagai cadangan.
+
+Buat selector khusus .arabic-text-container yang mengatur font-family: var(--font-arabic); direction: rtl; text-align: right;.
+
+Setel tinggi baris dasar (line-height) khusus teks Arab bertingkat minimal sebesar 2.2 untuk mencegah harakat bertubrukan.
+
+Kriteria Selesai (DoD): Teks Arab berharakat padat pada E-Reader dan kartu kuis terbaca dengan sangat jelas tanpa ada harakat yang terpotong pada resolusi apa pun.
+
+6.2.2: Implementasi Scale Font Reaktif untuk E-Reader
+
+Tujuan: Menghubungkan pengatur ukuran font (tombol perbesar/perkecil font) dengan class pengontrol font reaktif berbasis CSS Variables.
+
+Detail Pekerjaan:
+
+Alih-alih memanipulasi element.style.fontSize langsung dari JavaScript, buat variabel CSS lokal di penampung canvas E-Reader, misalnya: --reader-fs: 28px;.
+
+Ketika tombol perbesar/perkecil diklik, JavaScript hanya perlu memperbarui nilai CSS variable ini di tingkat kontainer induk: canvas.style.setProperty('--reader-fs', newSize + 'px').
+
+Elemen anak otomatis membaca ukuran tersebut secara deklaratif.
+
+Kriteria Selesai (DoD): Perubahan ukuran font di layar berjalan sangat ringan karena browser hanya melakukan recalculate style pada variabel CSS, bukan me-repaint seluruh DOM secara statis.
+
+SUBTUGAS 6.3: Pengujian Responsivitas Murni Menggunakan Media Queries
+
+6.3.1: Konstruksi Breakpoint Seluler (< 768px) pada Grid Utama SPA
+
+Tujuan: Memisahkan tata letak desktop (Sidebar di kiri) dan mobile (Bottom Nav di bawah) secara mutlak tanpa bantuan utility Tailwind.
+
+Detail Pekerjaan:
+
+Gunakan media query @media (max-width: 768px) untuk mengatur .app-wrapper agar grid-template-areas berubah menjadi baris vertikal tunggal.
+
+Paksa .app-sidebar bergeser keluar layar menggunakan transform: translateX(-100%); di mobile, dan berikan transisi halus saat menu hamburger disentuh untuk memunculkan sidebar (.mobile-open { transform: translateX(0); }).
+
+Kriteria Selesai (DoD): Menarik lebar layar browser di bawah 768px otomatis menyembunyikan sidebar desktop dan memunculkan mobile bottom navigation bar di bagian bawah layar secara mulus.
+
+6.3.2: Penyesuaian Ruang Padding & Margin Konten Utama dalam Mode Fokus (Minimalis)
+
+Tujuan: Memastikan bahwa ketika pengguna masuk ke dalam E-Reader atau Latihan Kuis, seluruh elemen dekoratif di luar konten (Header, Bottom Nav, Sidebar) tersembunyi sempurna dan menyisakan canvas full-width yang nyaman.
+
+Detail Pekerjaan:
+
+Di dalam CSS, buat aturan kelas .focus-active .app-content untuk memperluas lebar maksimum area konten menjadi 100% dan mereduksi padding luar menjadi minimal (misal: 16px di mobile).
+
+Pastikan transisi dari mode biasa ke mode fokus berjalan dengan animasi fade-in yang menenangkan mata.
+
+Kriteria Selesai (DoD): Masuk ke mode membaca atau kuis menyembunyikan seluruh menu navigasi, memperlebar layar baca secara maksimal, tanpa menyisakan ruang kosong atau margin aneh di sisi kiri dan kanan desktop.
+
+---
+
+## Batch 7
+
+Rencana Refaktor Mikro-Iteratif: Batch 7 (Finalisasi, Audit & Aktivasi PWA Luring)
+
+Fokus utama Batch 7 adalah melakukan pengujian akhir secara komprehensif, membersihkan sisa-sisa debug logging, menyelaraskan transisi antar-modul ES6, serta mengaktifkan kemampuan luring penuh (Offline-First) melalui Service Worker (sw.js) terstandarisasi untuk Single-Page Application kita.
+
+SUBTUGAS 7.1: Audit Console F12 & Pembersihan Inisialisasi ES6 Modul
+
+7.1.1: Deteksi & Resolusi Dependensi Melingkar (Circular Dependencies)
+
+Tujuan: Memeriksa apakah ada modul-modul ES6 yang saling mengimpor satu sama lain (misal: user_events.js mengimpor user_ui.js dan sebaliknya) yang dapat memicu kegagalan muat module dengan status Accessing uninitialized variable.
+
+Detail Pekerjaan:
+
+Telusuri seluruh rantai impor di dalam kode JS Anda yang baru.
+
+Jika terdapat dependensi melingkar, pecah dependensi tersebut dengan memanfaatkan State Manager global (appState) sebagai penengah, atau buat modul perantara baru untuk mendelegasikan perintah.
+
+Pastikan tidak ada lagi error bertuliskan Uncaught ReferenceError: Cannot access '...' before initialization di konsol pengembang browser.
+
+Kriteria Selesai (DoD): Halaman awal dimuat dengan mulus tanpa ada pesan peringatan (warning) atau kesalahan (error) merah di tab Console ($F12$).
+
+7.1.2: Standardisasi Ekstensi Jalur Impor (.js vs .mjs)
+
+Tujuan: Menyelaraskan seluruh deklarasi import statement agar menggunakan akhiran ekstensi berkas yang seragam sesuai standar Web Server dan kompiler platform.
+
+Detail Pekerjaan:
+
+Cari semua baris kode yang menggunakan kata kunci import { ... } from './...'.
+
+Pastikan seluruh referensi berkas internal menyertakan ekstensi .js secara eksplisit (misalnya: from './state.js' alih-alih from './state'), kecuali pustaka pihak ketiga yang diimpor melalui CDN atau modul eksternal khusus.
+
+Kriteria Selesai (DoD): Seluruh file JavaScript berhasil dimuat secara deklaratif di lingkungan browser modern tanpa memicu error 404 Not Found pada permintaan aset.
+
+SUBTUGAS 7.2: Konstruksi Service Worker Dinamis (sw.js)
+
+7.2.1: Pembuatan Sw.js untuk Caching Aset Utama SPA
+
+Tujuan: Membangun berkas sw.js (Service Worker) yang bertugas menangkap request jaringan dan menyajikan berkas index.html beserta file JavaScript esensial langsung dari Cache Storage ketika pengguna tidak memiliki koneksi internet.
+
+Detail Pekerjaan:
+
+Buat berkas baru bernama sw.js di direktori akar.
+
+Definisikan konstanta nama cache: const CACHE_NAME = 'meb-spa-cache-v1';.
+
+Tulis daftar aset statis esensial yang wajib di-cache terlebih dahulu saat instalasi pertama kali (install event): index.html, font lokal, dan ikon.
+
+Terapkan strategi caching Cache-First atau Network-Falling-Back-to-Cache untuk memastikan respon aplikasi instan dan hemat kuota data.
+
+Kriteria Selesai (DoD): Service Worker terdaftar dengan sukses di bawah tab Application -> Service Workers di Chrome DevTools, dan statusnya menunjukkan "Active and running".
+
+7.2.2: Penanganan Offline Cache Storage untuk Pihak Ketiga (FontAwesome, Chart.js)
+
+Tujuan: Mengamankan agar library visual seperti Chart.js, FontAwesome Icons, dan Google Fonts tetap tampil prima dan fungsional sekalipun perangkat dicabut dari jaringan internet (Offline Mode).
+
+Detail Pekerjaan:
+
+Di dalam modul Service Worker, tambahkan handler interception pada event fetch.
+
+Jika request mengarah ke CDN eksternal (seperti cdnjs.cloudflare.com untuk FontAwesome atau cdn.jsdelivr.net untuk Chart.js), simpan salinan respons tersebut secara dinamis ke dalam Cache Storage.
+
+Kriteria Selesai (DoD): Mengaktifkan mode luring ("Offline" di tab Network F12) lalu menyegarkan halaman tetap menampilkan seluruh grafik lingkaran hasil latihan, ikon menu, dan font Arab dengan sempurna tanpa ada request yang gagal (failed).
+
+SUBTUGAS 7.3: Pengujian Verifikasi Akhir & Validasi Multi-Device
+
+7.3.1: Simulasi Pemulihan Sesi & Pengujian Edge Case
+
+Tujuan: Memastikan aplikasi dapat memulihkan sesi kuis yang terputus (resume) dan menangani kondisi ekstrem (seperti kuota internet terputus di tengah jalan) secara elegan.
+
+Detail Pekerjaan:
+
+Kerjakan kuis latihan hingga setengah jalan, lalu segarkan (refresh) halaman browser secara paksa. Pastikan sistem menawarkan dialog konfirmasi kelanjutan dan berhasil memulihkan indeks soal serta jawaban yang sudah terisi.
+
+Lakukan simulasi pengosongan database IndexedDB lewat menu pengaturan dan pastikan sistem mampu melakukan inisialisasi ulang ke kondisi default (graceful fallback) tanpa crash total.
+
+Kriteria Selesai (DoD): Seluruh edge cases tertangani dengan pesan notifikasi yang ramah bagi pengguna dan data kemajuan latihan tetap terjaga aman di penyimpanan lokal.

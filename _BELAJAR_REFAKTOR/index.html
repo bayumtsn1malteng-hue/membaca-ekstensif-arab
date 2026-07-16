@@ -2,24 +2,260 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ta'allum Al-'Arabiyyah</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scal=1.0, user-scalable=no">
+    <title>Membaca Ekstensif Bertingkat (MEB) Arab</title>
+
+    <!-- Google Fonts: Notosans Arabic (Konten Arab) & Plus Jakarta Sans (UI aplikasi)-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons untuk simbol navigasi UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+    /* what is :root */
+    :root {
+      /* Typography Tokens */
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-arabic: 'Noto Sans Arabic', 'Courier New', serif;
+
+      /* Color Tokens: Elegant Light Palette */
+      --bg-app: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-inverse: #ffffff;
+
+      --brand-primary: #0d9488;
+      --brand-light: #f0fdfa;
+      --brand-dark: #115e59;
+      --brand-glow: rgba(13, 148, 136, 0.1);
+
+      /* Feedback Status Color Tokens */
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      --color-info: #3b82f6;
+
+      /* Leitner Box System Variables */
+      --box1-bg: #fff5f5; --box1-text: #c53030; --box1-border: #feb2b2;
+      --box2-bg: #fffaf0; --box2-text: #dd6b20; --box2-border: #fbd38d;
+      --box3-bg: #fffff0; --box3-text: #b7791f; --box3-border: #fefcbf;
+      --box4-bg: #f0f9ff; --box4-text: #2b6cb0; --box4-border: #bee3f8;
+      --box5-bg: #f5f3ff; --box5-text: #4c51bf; --box5-border: #e9d8fd;
+      --box-known-bg: #f0fdf4; --box-known-text: #2f855a; --box-known-border: #bbf7d0;
+
+      /* Border Radius Tokens */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      
+      /* Elevation Shadow Tokens */
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.08);
+
+      /* Animation Token */
+      --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Overrides untuk Elegant Dark Mode Palette */
+    html.dark {
+      --bg-app: #020617;
+      --bg-surface: #0f172a;
+      --bg-card: #0f172a;
+      --border-color: #1e293b;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-inverse: #020617;
+
+      --brand-primary: #14b8a6;
+      --brand-light: #042f2e;
+      --brand-dark: #0f766e;
+      --brand-glow: rgba(20, 184, 166, 0.15);
+
+      --box1-bg: #451a1a; --box1-text: #fecaca; --box1-border: #7f1d1d;
+      --box2-bg: #452b1a; --box2-text: #fed7aa; --box2-border: #7c2d12;
+      --box3-bg: #3f3f1a; --box3-text: #fef08a; --box3-border: #713f12;
+      --box4-bg: #1a2e45; --box4-text: #bfdbfe; --box4-border: #1e3a8a;
+      --box5-bg: #231a45; --box5-text: #ddd6fe; --box5-border: #4c1d95;
+      --box-known-bg: #143525; --box-known-text: #a7f3d0; --box-known-border: #064e3b;
+    }
+
+    /* CSS Reset Standard */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-app); /* apa itu "var" */
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition-smooth);
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Mengatur grid utama aplikasi: 3 area utama (Sidebar, Header, Content) */
+    .app-wrapper {
+        display: grid;
+        grid-template-columns: 260px 1fr; /* Lebar sidebar 260px, siswanya untuk ruang, apa itu "fr" */
+        grid-template-rows: 64px 1fr;
+        grid-template-areas: "sidebar header" "sidebar cntent";
+        min-height: 100vh; /* apa itu "vh" */
+    }
+
+    .app-sidebar {
+        grid-area: sidebar;
+        background-color: var(--bg-surface);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px;
+        position: fixed; /* mengunci posisi sidebar agar tidak ikut ter-scroll */
+        width: 260px;
+        height: 100vh;
+        z-index: 50;
+        transition: var(--transition-smooth);
+    }
+
+    /* Gaya Log dan Badge aplikasi */
+    .brand-logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 32px;
+    }
+
+    .logo-badge {
+        background-color: var(--brand-primary);
+        color: var(--text-inverse);
+        padding: 10px;
+        border-radius: var(--radius-md);
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px var(--brand-glow); 
+    }
+
+    .brand-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    /* Tombol navigasi sidebar */
+    .nav-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 12px 16px;
+        background: none;
+        border: none;
+        border-radius: var(--radius-md);
+        color: var(--text-muted);
+        font-family: var(--font-sans);
+        font-size: 13px;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+    }
+
+    .nav-btn:hover {
+        background-color: var(--border-color);
+        color: var(--text-main);
+    }
+
+    .nav-btn:active {
+        background-color: var(--brand-light);
+        color: var(--brand-primary);
+    }
+
+    /*toggle tema */
+    .theme-toggle-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition-smooth);
+    }
+
+    .theme-toggle-btn:hover {
+        background-color: var(--border-color);
+        color: var(--text-main);
+    }
+
+
+  </style>
 </head>
+    <div class="app-wrapper">
+        <!--Desktop sidebar-->
+        <aside class="app-sidebar" id="main-sidebar">
+            <!--Bagian Logo-->
+            <div class="brand-logo-container">
+                <div class="logo-badge"><i class="fa-solid fa-book-open-reader"></i></div>
+            </div>
+
+            <div>
+                <h1 class="brand-title">قراءة بالعربية</h1>
+                <span style="font-size: 9px; color: var(--brand-primary); font-weight: 800; text-transform: uppercase;">v.0.10.1-alpha</span>
+            </div>
+
+            <!-- Menu navigasi (Menggunakan data-target untuk router JS nanti)-->
+             <nav style="display: flex; flex-direction: column; gap: 6px;">
+                <button data-target="library" class="nav-btn active">
+                    <i class="fa-solid fa-book"></i> Pustaka
+                </button>
+
+                <button data-target="kamus" class="nav-btn">
+                    <i class="fa-solid fa-brain"></i>
+                    <i> Flashcard</i>
+                </button>
+
+                <button data-target="exercise" class="nav-btn">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    Latihan
+                </button>
+                
+                <button data-target="settings" class="nav-btn">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                    Pengaturan
+                </button>
+            </nav>
+
+            <!-- Sidebar Footer & Tombol Dark Mode-->
+            <div>
+                <span style="border-top: 1px solid var(--border-color); padding-top: 16px; display: flex; align-items: center; justify-content: space-between;" id="user-display-name">Tamu</span>
+                <button id="theme-toggle-desktop" class="theme-toggle-button">
+                    <i class="fa-solid fa-moon" id="theme-icon-desktop"></i>
+                </button>
+            </div>
+
+        </aside>
+    </div>
+
 <body>
-    <header>
-        <h1>MEMBACA EKSTENSIF ARAB</h1>
-    </header>
 
-    <main>
-        <div id="app"></div>
-    </main>
-
-    <footer>
-
-
-    </footer>
-    
-    <script type="module" src="js/app.js"></script>
 </body>
 </html>
