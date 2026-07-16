@@ -1,0 +1,1 @@
+// Entri point, mengatur inisialisasi

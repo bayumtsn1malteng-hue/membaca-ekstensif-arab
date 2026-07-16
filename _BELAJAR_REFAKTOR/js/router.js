@@ -1,0 +1,1 @@
+// Mengatur perpindahan halaman tanpa reload
