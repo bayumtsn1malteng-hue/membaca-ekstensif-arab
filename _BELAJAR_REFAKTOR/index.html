@@ -112,7 +112,7 @@
         display: grid;
         grid-template-columns: 260px 1fr; /* Lebar sidebar 260px, siswanya untuk ruang, apa itu "fr" */
         grid-template-rows: 64px 1fr;
-        grid-template-areas: "sidebar header" "sidebar cntent";
+        grid-template-areas: "sidebar header" "sidebar content";
         min-height: 100vh; /* apa itu "vh" */
     }
 
@@ -206,6 +206,30 @@
         color: var(--text-main);
     }
 
+    /* Iterasi 3 */
+    /* Structural Header Component */
+    .app-header {
+        grid-area: header;
+        background-color: rgba(255,255,255,0.8);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        position: sticky; /* Menjaga header tetap di atas ketika discroll */
+        top: 0;
+        z-index: 40;
+        backdrop-filter: blur(12px); /* Efek kaca transparan modern */
+        transition: var(--transition-smooth);
+    }
+
+    /* Override Header saat Dark Mode aktif */
+    html.dark .app-header {
+        background-color: rgba(12,23,42,0.8); /*cari: rgba */
+    }
+
+    /* Mobile Navigation Bottom Bar Styling */
+    /* Tombol Menu pada Navigasi Mobile */
 
   </style>
 </head>
@@ -251,9 +275,24 @@
                     <i class="fa-solid fa-moon" id="theme-icon-desktop"></i>
                 </button>
             </div>
-
         </aside>
     </div>
+
+    <!-- MAIN HEADER NAVIGATION -->
+     <header class="app-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button id="mobile-menu-trigger" style="background: none; border: none; font-size: 18px; color: var(--text-main); cursor: pointer;" class="md:hidden">
+                <i class="fa-solid fa-bars"></i>
+                <span style="font-size: 14px; font-weight: 700; color: var(--brand-primary) ;" id="current-view-title">Perpustakaan Digital</span>
+            </button>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 11px; font-weight: 700; background-color: var(--brand-light); color: var(--brand-primary); padding: 4px 10px; border-radius: var(--radius-sm);" id="header-status-badge">
+                    Database Lokal
+                </div>
+            </div>
+        </div>
+     </header>
 
 <body>
 
